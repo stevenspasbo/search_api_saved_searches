@@ -1,0 +1,16 @@
+search_api_saved_searches.type.*:
+  type: config_entity
+  label: 'Saved search type'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: string
+      label: 'Label'
+    default:
+      type: boolean
+      label: 'Is default'
+    options:
+      type: mapping
+      label: 'Options'

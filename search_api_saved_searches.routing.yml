@@ -1,0 +1,28 @@
+entity.search_api_saved_search_type.collection:
+  path: '/admin/config/search/search-api-saved-searches'
+  defaults:
+    _title: 'Search API Saved Searches'
+    _entity_list: 'search_api_saved_search_type'
+  requirements:
+    _permission: 'administer search_api_saved_searches'
+
+entity.search_api_saved_search_type.add_form:
+  path: '/admin/config/search/search-api-saved-searches/add-type'
+  defaults:
+    _entity_form: 'search_api_saved_search_type.default'
+  requirements:
+    _entity_create_access: 'search_api_saved_search_type'
+
+entity.search_api_saved_search_type.edit_form:
+  path: '/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit'
+  defaults:
+    _entity_form: 'search_api_saved_search_type.edit'
+  requirements:
+    _entity_access: 'search_api_saved_search_type.edit'
+
+entity.search_api_saved_search_type.delete_form:
+  path: '/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/delete'
+  defaults:
+    _entity_form: 'search_api_saved_search_type.delete'
+  requirements:
+    _entity_access: 'search_api_saved_search_type.delete'

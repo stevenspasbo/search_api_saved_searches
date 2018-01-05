@@ -1,0 +1,6 @@
+<?php
+
+/**
+ * @file
+ * Allows visitors to bookmark searches and get notifications for new results.
+ */
