@@ -152,14 +152,17 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
       return [];
     }
 
-    $form_object = $this->getEntityTypeManager()
-      ->getFormObject('search_api_saved_search', 'create');
+    $values = [
+      'type' => $type->id(),
+      'query' => serialize($query),
+      'mail' => \Drupal::currentUser()->getEmail(),
+    ];
     $saved_search = $this->getEntityTypeManager()
       ->getStorage('search_api_saved_search')
-      ->create([
-        'type' => $type->id(),
-        'query' => $query,
-      ]);
+      ->create($values);
+
+    $form_object = $this->getEntityTypeManager()
+      ->getFormObject('search_api_saved_search', 'create');
     $form_object->setEntity($saved_search);
     return $this->getFormBuilder()->getForm($form_object);
   }

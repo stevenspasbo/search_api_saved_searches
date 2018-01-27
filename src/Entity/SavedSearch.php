@@ -12,13 +12,13 @@ use Drupal\search_api_saved_searches\SavedSearchInterface;
  *
  * @ContentEntityType(
  *   id = "search_api_saved_search",
- *   label = @Translation("Search task"),
- *   label_collection = @Translation("Search tasks"),
- *   label_singular = @Translation("search task"),
- *   label_plural = @Translation("search tasks"),
+ *   label = @Translation("Saved search"),
+ *   label_collection = @Translation("Saved searches"),
+ *   label_singular = @Translation("saved search"),
+ *   label_plural = @Translation("saved searches"),
  *   label_count = @PluralTranslation(
- *     singular = "@count search task",
- *     plural = "@count search tasks"
+ *     singular = "@count saved search",
+ *     plural = "@count saved searches"
  *   ),
  *   bundle_label = @Translation("Search type"),
  *   handlers = {
@@ -94,6 +94,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
     // @todo If we want the notification mechanism to be configurable, this
     //   probably shouldn't be here (but in bundleFieldDefinitions(), probably).
     $fields['mail'] = BaseFieldDefinition::create('email')
+      ->setLabel(t('E-mail'))
       ->setDescription(t('The email address to which notifications should be sent.'))
       ->setDisplayOptions('view', [
         'type' => 'timestamp',
@@ -118,7 +119,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['last_queued'] = BaseFieldDefinition::create('timestamp')
+    $fields['last_queued'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Last queued'))
       ->setDescription(t('The time that the saved search was last queued for execution.'))
       ->setDisplayOptions('view', [
@@ -131,7 +132,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['last_executed'] = BaseFieldDefinition::create('timestamp')
+    $fields['last_executed'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Last executed'))
       ->setDescription(t('The time that the saved search was last checked for new results.'))
       ->setDisplayOptions('view', [
@@ -146,7 +147,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
 
     $fields['notify_interval'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Notification interval'))
-      ->setDescription(t('The interval, in seconds, in which the creator of the saved search should be notified of new results.'))
+      ->setDescription(t('The interval (in seconds) in which you want to receive notifications of new results for this saved search. Use -1 for "Never".'))
       ->addPropertyConstraints('value', [
         'Range' => [
           'min' => -1,

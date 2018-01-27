@@ -1,7 +1,7 @@
 entity.search_api_saved_search_type.collection:
   path: '/admin/config/search/search-api-saved-searches'
   defaults:
-    _title: 'Search API Saved Searches'
+    _title: 'Saved searches'
     _entity_list: 'search_api_saved_search_type'
   requirements:
     _permission: 'administer search_api_saved_searches'
