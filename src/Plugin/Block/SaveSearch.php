@@ -8,7 +8,6 @@ use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\search_api\Utility\QueryHelperInterface;
-use Drupal\search_api_saved_searches\Form\CreateSavedSearchForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -128,11 +127,11 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
    * {@inheritdoc}
    */
   public function access(AccountInterface $account, $return_as_object = FALSE) {
-    $access = parent::access($account);
+    $access = parent::access($account, TRUE);
 
     $create_access = $this->getEntityTypeManager()
       ->getAccessControlHandler('search_api_saved_search')
-      ->createAccess($this->getDerivativeId(), $account);
+      ->createAccess($this->getDerivativeId(), $account, [], TRUE);
     $access->andIf($create_access);
 
     return $return_as_object ? $access : $access->isAllowed();
@@ -152,10 +151,17 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     if (!$query) {
       return [];
     }
-    // @todo Should we get a form using a form display mode instead?
-    \Drupal::entityTypeManager()->getFormObject('', '');
-    return $this->getFormBuilder()
-      ->getForm(CreateSavedSearchForm::class, $type, $query);
+
+    $form_object = $this->getEntityTypeManager()
+      ->getFormObject('search_api_saved_search', 'create');
+    $saved_search = $this->getEntityTypeManager()
+      ->getStorage('search_api_saved_search')
+      ->create([
+        'type' => $type->id(),
+        'query' => $query,
+      ]);
+    $form_object->setEntity($saved_search);
+    return $this->getFormBuilder()->getForm($form_object);
   }
 
   /**

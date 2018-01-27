@@ -20,6 +20,15 @@ use Drupal\search_api_saved_searches\SavedSearchInterface;
  *     singular = "@count search task",
  *     plural = "@count search tasks"
  *   ),
+ *   bundle_label = @Translation("Search type"),
+ *   handlers = {
+ *     "form" = {
+ *       "default" = "Drupal\search_api_saved_searches\Form\SavedSearchForm",
+ *       "create" = "Drupal\search_api_saved_searches\Form\SavedSearchCreateForm",
+ *       "edit" = "Drupal\search_api_saved_searches\Form\SavedSearchForm",
+ *       "delete" = "Drupal\search_api_saved_searches\Form\SavedSearchDeleteConfirmForm",
+ *     },
+ *   },
  *   admin_permission = "administer search_api_saved_searches",
  *   base_table = "search_api_saved_search",
  *   data_table = "search_api_saved_search_field_data",
@@ -35,9 +44,6 @@ use Drupal\search_api_saved_searches\SavedSearchInterface;
  *   bundle_entity_type = "search_api_saved_search_type",
  *   field_ui_base_route = "entity.search_api_saved_search_type.edit_form",
  *   permission_granularity = "bundle",
- *   forms = {
- *     "create" = "Drupal\search_api_saved_searches\Form\CreateSavedSearchForm",
- *   },
  * )
  */
 class SavedSearch extends ContentEntityBase implements SavedSearchInterface {

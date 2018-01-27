@@ -8,13 +8,13 @@ use Drupal\Core\Url;
 /**
  * @todo
  */
-class SavedSearchTypeDeleteConfirmForm extends EntityConfirmFormBase {
+class SavedSearchDeleteConfirmForm extends EntityConfirmFormBase {
 
   /**
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->t('Do you really want to delete this saved search type?');
+    return $this->t('Do you really want to delete this saved search?');
   }
 
   /**
@@ -23,4 +23,5 @@ class SavedSearchTypeDeleteConfirmForm extends EntityConfirmFormBase {
   public function getCancelUrl() {
     return Url::fromRoute('', '');
   }
+
 }

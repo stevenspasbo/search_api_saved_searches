@@ -38,6 +38,8 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     "uuid" = "uuid",
  *   },
  *   config_export = {
+ *     "id" = "id",
+ *     "label" = "label",
  *     "default",
  *     "options",
  *   },
@@ -68,6 +70,8 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
   /**
    * Whether this is the default type.
    *
+   * @todo Is this still needed? Pretty sure it's not.
+   *
    * @var bool
    */
   protected $default = FALSE;
@@ -88,6 +92,7 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
     if (!$update && !$this->isSyncing()) {
       // @todo Create "search_api_saved_search.ID.create" form display. (Or
       //   better do this as a hook?)
+      // @todo Don't forget to also add one for our default type.
     }
   }
 
