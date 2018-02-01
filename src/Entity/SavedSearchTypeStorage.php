@@ -7,7 +7,7 @@ use Drupal\Core\Config\Entity\ConfigEntityStorage;
 /**
  * Provides a storage handler for saved search types.
  *
- * @todo Are these two methods even needed?
+ * @todo Are these two methods even needed? Do we need a "default" type?
  */
 class SavedSearchTypeStorage extends ConfigEntityStorage {
 

@@ -22,6 +22,8 @@ use Drupal\search_api_saved_searches\SavedSearchInterface;
  *   ),
  *   bundle_label = @Translation("Search type"),
  *   handlers = {
+ *     "list_builder" = "Drupal\search_api_saved_searches\SavedSearchListBuilder",
+ *     "views_data" = "Drupal\search_api_saved_searches\SavedSearchViewsData",
  *     "form" = {
  *       "default" = "Drupal\search_api_saved_searches\Form\SavedSearchForm",
  *       "create" = "Drupal\search_api_saved_searches\Form\SavedSearchCreateForm",
@@ -44,6 +46,11 @@ use Drupal\search_api_saved_searches\SavedSearchInterface;
  *   bundle_entity_type = "search_api_saved_search_type",
  *   field_ui_base_route = "entity.search_api_saved_search_type.edit_form",
  *   permission_granularity = "bundle",
+ *   links = {
+ *     "canonical" = "/user/{user}/saved-searches/{search_api_saved_search}/edit",
+ *     "edit-form" = "/user/{user}/saved-searches/{search_api_saved_search}/edit",
+ *     "delete-form" = "/user/{user}/saved-searches/{search_api_saved_search}/delete",
+ *   },
  * )
  */
 class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
@@ -203,6 +210,15 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
    */
   public static function getCurrentUserId() {
     return [\Drupal::currentUser()->id()];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function urlRouteParameters($rel) {
+    $params = parent::urlRouteParameters($rel);
+    $params['user'] = $this->uid[0]->target_id;
+    return $params;
   }
 
 }

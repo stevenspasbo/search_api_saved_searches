@@ -52,7 +52,7 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     "edit-form" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
  *     "delete-form" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/delete",
  *     "collection" = "/admin/config/search/search-api-saved-searches",
- *   }
+ *   },
  * )
  */
 class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeInterface {
