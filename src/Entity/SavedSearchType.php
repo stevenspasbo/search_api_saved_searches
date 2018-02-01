@@ -4,6 +4,8 @@ namespace Drupal\search_api_saved_searches\Entity;
 
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\search_api\Utility\QueryHelperInterface;
 use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
@@ -92,9 +94,57 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
     parent::postSave($storage, $update);
 
     if (!$update && !$this->isSyncing()) {
-      // @todo Create "search_api_saved_search.ID.create" form display. (Or
-      //   better do this as a hook?)
-      // @todo Don't forget to also add one for our default type.
+      try {
+        EntityFormDisplay::create([
+          'status' => TRUE,
+          'id' => 'search_api_saved_search.default.create',
+          'targetEntityType' => 'search_api_saved_search',
+          'bundle' => 'default',
+          'mode' => 'create',
+          'content' => [
+            'label' => [
+              'type' => 'string_textfield',
+              'weight' => 0,
+              'region' => 'content',
+              'settings' => [
+                'size' => 60,
+                'placeholder' => '',
+              ],
+              'third_party_settings' => [],
+            ],
+            'mail' => [
+              'type' => 'email_default',
+              'weight' => 2,
+              'region' => 'content',
+              'settings' => [
+                'size' => 60,
+                'placeholder' => 'user@example.com',
+              ],
+              'third_party_settings' => [],
+            ],
+            'notify_interval' => [
+              'type' => 'number',
+              'weight' => 1,
+              'region' => 'content',
+              'settings' => [
+                'placeholder' => '',
+              ],
+              'third_party_settings' => [],
+            ],
+          ],
+          'hidden' => [
+            'created' => TRUE,
+            'langcode' => TRUE,
+            'last_executed' => TRUE,
+            'last_queued' => TRUE,
+            'uid' => TRUE,
+          ],
+        ])->save();
+      }
+      catch (EntityStorageException $e) {
+        $vars = ['%label' => $this->label()];
+        watchdog_exception('search_api_saved_searches', $e, '%type while trying to configure the "Create" form display for the new saved search type %label: @message in %function (line %line of %file).', $vars);
+      }
     }
   }
 
