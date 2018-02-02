@@ -465,7 +465,7 @@ display:
     position: 1
     display_options:
       display_extenders: {  }
-      path: user/%/saved-searches
+      path: user/%user/saved-searches
       menu:
         type: tab
         title: 'Saved searches'

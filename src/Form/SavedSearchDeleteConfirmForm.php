@@ -2,13 +2,21 @@
 
 namespace Drupal\search_api_saved_searches\Form;
 
-use Drupal\Core\Entity\EntityConfirmFormBase;
+use Drupal\Core\Entity\ContentEntityConfirmFormBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
 /**
- * @todo
+ * Provides a form for deleting a saved search.
  */
-class SavedSearchDeleteConfirmForm extends EntityConfirmFormBase {
+class SavedSearchDeleteConfirmForm extends ContentEntityConfirmFormBase {
+
+  /**
+   * The entity being used by this form.
+   *
+   * @var \Drupal\search_api_saved_searches\SavedSearchInterface
+   */
+  protected $entity;
 
   /**
    * {@inheritdoc}
@@ -21,7 +29,30 @@ class SavedSearchDeleteConfirmForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return Url::fromRoute('', '');
+    if (!empty($this->entity->getOwnerId())) {
+      $redirect = '/user/' . $this->entity->getOwnerId() . '/saved-searches';
+      return Url::fromUserInput($redirect);
+    }
+    else {
+      return Url::fromUri('internal:<front>');
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getConfirmText() {
+    return $this->t('Delete');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $this->entity->delete();
+    // @todo Replace with messenger service once we depend on Drupal 8.5+.
+    drupal_set_message($this->t('The saved search was successfully deleted.'));
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

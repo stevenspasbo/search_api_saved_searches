@@ -1,3 +1,10 @@
+entity.search_api_saved_search.canonical:
+  path: '/user/{user}/saved-searches/{search_api_saved_search}/edit'
+  defaults:
+    _entity_form: 'search_api_saved_search.edit'
+  requirements:
+    _entity_access: 'search_api_saved_search.edit'
+
 entity.search_api_saved_search.edit_form:
   path: '/user/{user}/saved-searches/{search_api_saved_search}/edit'
   defaults:

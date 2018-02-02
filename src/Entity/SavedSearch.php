@@ -6,6 +6,7 @@ use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
+use Drupal\user\UserInterface;
 
 /**
  * Provides an entity type for saved searches.
@@ -217,8 +218,38 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
    */
   protected function urlRouteParameters($rel) {
     $params = parent::urlRouteParameters($rel);
-    $params['user'] = $this->uid[0]->target_id;
+    $params['user'] = $this->getOwnerId();
     return $params;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOwner() {
+    return $this->get('uid')->entity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setOwner(UserInterface $account) {
+    $this->set('uid', $account->id());
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOwnerId() {
+    return $this->get('uid')->target_id;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setOwnerId($uid) {
+    $this->set('uid', $uid);
+    return $this;
   }
 
 }

@@ -3,10 +3,10 @@
 namespace Drupal\search_api_saved_searches\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
-use Drupal\Core\Url;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
- * @todo
+ * Provides a form for deleting saved search types.
  */
 class SavedSearchTypeDeleteConfirmForm extends EntityConfirmFormBase {
 
@@ -21,6 +21,17 @@ class SavedSearchTypeDeleteConfirmForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return Url::fromRoute('', '');
+    return $this->entity->toUrl('collection');
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $this->entity->delete();
+    // @todo Replace with messenger service once we depend on Drupal 8.5+.
+    drupal_set_message($this->t('The saved search type was successfully deleted.'));
+    $form_state->setRedirectUrl($this->getCancelUrl());
+  }
+
 }

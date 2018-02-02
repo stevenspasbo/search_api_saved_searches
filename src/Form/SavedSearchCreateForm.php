@@ -13,20 +13,6 @@ class SavedSearchCreateForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function getBaseFormId() {
-    return NULL;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getFormId() {
-    return 'search_api_saved_search_create';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
     $actions['submit']['#value'] = $this->t('Save search');
