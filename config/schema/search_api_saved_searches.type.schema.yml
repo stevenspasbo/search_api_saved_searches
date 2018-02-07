@@ -8,9 +8,29 @@ search_api_saved_searches.type.*:
     label:
       type: string
       label: 'Label'
-    default:
-      type: boolean
-      label: 'Is default'
     options:
       type: mapping
       label: 'Options'
+      mapping:
+        displays:
+          type: mapping
+          label: 'Search displays'
+          mapping:
+            default:
+              type: boolean
+              label: 'Whether to exclude (TRUE) or include (FALSE) the selected displays.'
+            selected:
+              type: sequence
+              label: 'The selected displays'
+              sequence:
+                type: string
+                label: 'A display plugin ID'
+        date_field:
+          type: sequence
+          label: 'Method for determining new results (per index)'
+          sequence:
+            type: string
+            label: 'The date field to use for this index (or empty to determine via result IDs)'
+        description:
+          type: string
+          label: 'User interface description'

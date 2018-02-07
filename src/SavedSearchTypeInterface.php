@@ -11,14 +11,6 @@ use Drupal\search_api\Utility\QueryHelperInterface;
 interface SavedSearchTypeInterface extends ConfigEntityInterface {
 
   /**
-   * Determines whether this is the default saved search type.
-   *
-   * @return bool
-   *   TRUE if this is the default saved search type, FALSE otherwise.
-   */
-  public function isDefault();
-
-  /**
    * Retrieves the settings.
    *
    * @return array

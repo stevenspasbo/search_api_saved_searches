@@ -43,7 +43,6 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *   config_export = {
  *     "id" = "id",
  *     "label" = "label",
- *     "default",
  *     "options",
  *   },
  *   links = {
@@ -70,15 +69,6 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
    * @var string
    */
   protected $label;
-
-  /**
-   * Whether this is the default type.
-   *
-   * @todo Is this still needed? Pretty sure it's not.
-   *
-   * @var bool
-   */
-  protected $default = FALSE;
 
   /**
    * The settings for this type.
@@ -146,13 +136,6 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
         watchdog_exception('search_api_saved_searches', $e, '%type while trying to configure the "Create" form display for the new saved search type %label: @message in %function (line %line of %file).', $vars);
       }
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function isDefault() {
-    return $this->default;
   }
 
   /**
