@@ -4,7 +4,6 @@ namespace Drupal\search_api_saved_searches\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Utility\Token;
 use Drupal\search_api\Display\DisplayPluginManager;
 use Drupal\search_api\Utility\DataTypeHelperInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -36,13 +35,6 @@ class SavedSearchTypeForm extends EntityForm {
   protected $dataTypeHelper;
 
   /**
-   * The token service.
-   *
-   * @var \Drupal\Core\Utility\Token|null
-   */
-  protected $tokenService;
-
-  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -53,7 +45,6 @@ class SavedSearchTypeForm extends EntityForm {
     $form->setEntityTypeManager($container->get('entity_type.manager'));
     $form->setDisplayPluginManager($container->get('plugin.manager.search_api.display'));
     $form->setDataTypeHelper($container->get('search_api.data_type_helper'));
-    $form->setTokenService($container->get('token'));
 
     return $form;
   }
@@ -111,29 +102,6 @@ class SavedSearchTypeForm extends EntityForm {
    */
   public function setDataTypeHelper(DataTypeHelperInterface $data_type_helper) {
     $this->dataTypeHelper = $data_type_helper;
-    return $this;
-  }
-
-  /**
-   * Retrieves the token service.
-   *
-   * @return \Drupal\Core\Utility\Token
-   *   The token service.
-   */
-  public function getTokenService() {
-    return $this->tokenService ?: \Drupal::service('token');
-  }
-
-  /**
-   * Sets the token service.
-   *
-   * @param \Drupal\Core\Utility\Token $token_service
-   *   The new token service.
-   *
-   * @return $this
-   */
-  public function setTokenService(Token $token_service) {
-    $this->tokenService = $token_service;
     return $this;
   }
 
@@ -268,86 +236,6 @@ class SavedSearchTypeForm extends EntityForm {
       '#default_value' => $type->getOption('description', ''),
       '#parents' => ['options', 'description'],
     ];
-//    $form['options']['misc']['registered_choose_mail'] = [
-//      '#type' => 'checkbox',
-//      '#title' => $this->t('Let logged-in users also enter a different mail address'),
-//      '#default_value' => $type->getOption('registered_choose_mail'),
-//      '#parents' => ['options', 'registered_choose_mail'],
-//    ];
-
-//    $form['options']['mail'] = [
-//      '#type' => 'details',
-//      '#title' =>$this->t('Activation mail'),
-//      '#open' => $type->isNew(),
-//    ];
-//    $form['options']['mail']['activate']['send'] = [
-//      '#type' => 'checkbox',
-//      '#title' =>$this->t('Use activation mail for anonymous users'),
-//      '#description' =>$this->t("Will require that saved searches created by anonymous users, or by normal users with an e-mail address that isn't their own, are activated by clicking a link in an e-mail."),
-//      '#default_value' => $type->getOption('mail.activate.send', TRUE),
-//    ];
-//    $states = [
-//      'visible' => [
-//        ':input[name="options[mail][activate][send]"]' => [
-//          'checked' => TRUE,
-//        ],
-//      ],
-//    ];
-//    $args = ['@site_name' => '[site:name]'];
-//    $default_title = $this->t('Activate your saved search at @site_name', $args);
-//    $args['@activation_link'] = '[activation_link]';
-//    $default_body = $this->t("A saved search on @site_name with this e-mail address was created.
-//To activate this saved search, click the following link:
-//
-//@activation_link
-//
-//If you didn't create this saved search, just ignore this mail and the saved search will be deleted.
-//
-//--  @site_name team", $args);
-//    $form['options']['mail']['activate']['title'] = [
-//      '#type' => 'textfield',
-//      '#title' =>$this->t('Subject'),
-//      '#description' =>$this->t("Enter the mail's subject.") . ' ' .
-//          $this->t('See below for available replacements.'),
-//      '#default_value' => $type->getOption('mail.activate.title', $default_title),
-//      '#required' => TRUE,
-//      '#states' => $states,
-//    ];
-//    $form['options']['mail']['activate']['body'] = [
-//      '#type' => 'textarea',
-//      '#title' =>$this->t('Body'),
-//      '#description' =>$this->t("Enter the mail's body.") . ' ' .
-//          $this->t('See below for available replacements.'),
-//      '#default_value' => $type->getOption('mail.activate.body', $default_body),
-//      '#rows' => 12,
-//      '#required' => TRUE,
-//      '#states' => $states,
-//    ];
-//
-//    // Code taken from \Drupal\views\Plugin\views\PluginBase::globalTokenForm().
-//    $token_items = [];
-//    foreach ($this->getTokenService()->getInfo()['tokens'] as $type => $tokens) {
-//      if (!in_array($type, ['site', 'user'])) {
-//        continue;
-//      }
-//      $item = [
-//        '#markup' => $type,
-//        'children' => [],
-//      ];
-//      foreach ($tokens as $name => $info) {
-//        $item['children'][$name] = "[$type:$name]" . ' - ' . $info['name'] . ': ' . $info['description'];
-//      }
-//
-//      $token_items[$type] = $item;
-//    }
-//    $form['options']['mail']['activate']['available_tokens'] = [
-//      '#type' => 'details',
-//      '#title' => $this->t('Available token replacements'),
-//    ];
-//    $form['options']['mail']['activate']['available_tokens']['list'] = [
-//      '#theme' => 'item_list',
-//      '#items' => $token_items,
-//    ];
 
     return $form;
   }
