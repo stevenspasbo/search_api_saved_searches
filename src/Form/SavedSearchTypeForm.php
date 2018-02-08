@@ -264,7 +264,7 @@ class SavedSearchTypeForm extends EntityForm {
     $form['options']['misc']['description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('User interface description'),
-      '#description' => $this->t('Enter a text that will be displayed to users when creating a saved search.'),
+      '#description' => $this->t('Enter a text that will be displayed to users when creating a saved search. You can use HTML in this field.'),
       '#default_value' => $type->getOption('description', ''),
       '#parents' => ['options', 'description'],
     ];

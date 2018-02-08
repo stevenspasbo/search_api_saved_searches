@@ -2,6 +2,7 @@
 
 namespace Drupal\search_api_saved_searches\Plugin\Block;
 
+use Drupal\Component\Utility\Xss;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
@@ -152,6 +153,13 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
       return [];
     }
 
+    $build = [];
+
+    $description = $type->getOption('description');
+    if ($description) {
+      $build['description']['#markup'] = Xss::filterAdmin($description);
+    }
+
     $values = [
       'type' => $type->id(),
       'query' => serialize($query),
@@ -164,7 +172,9 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     $form_object = $this->getEntityTypeManager()
       ->getFormObject('search_api_saved_search', 'create');
     $form_object->setEntity($saved_search);
-    return $this->getFormBuilder()->getForm($form_object);
+    $build['form'] = $this->getFormBuilder()->getForm($form_object);
+
+    return $build;
   }
 
   /**
