@@ -2,3 +2,7 @@ services:
   logger.channel.search_api_saved_searches:
     parent: logger.channel_base
     arguments: ['search_api_saved_searches']
+
+  plugin.manager.search_api_saved_searches.notification:
+    class: Drupal\search_api_saved_searches\Notification\NotificationPluginManager
+    parent: default_plugin_manager

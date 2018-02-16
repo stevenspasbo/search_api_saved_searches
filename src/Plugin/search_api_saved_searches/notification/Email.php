@@ -2,6 +2,7 @@
 
 namespace Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Utility\Token;
@@ -106,7 +107,7 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
       '#type' => 'checkbox',
       '#title' => $this->t('Use activation mail for anonymous users'),
       '#description' => $this->t("Will require that saved searches created by anonymous users, or by normal users with an e-mail address that isn't their own, are activated by clicking a link in an e-mail."),
-      '#default_value' => $this->configuration['mail']['activate']['send'],
+      '#default_value' => $this->configuration['activate']['send'],
     ];
     $states = [
       'visible' => [
@@ -173,7 +174,7 @@ If you didn't create this saved search, just ignore this mail and the saved sear
         continue;
       }
       $item = [
-        '#markup' => $type,
+        '#markup' => Html::escape($type),
         'children' => [],
       ];
       foreach ($tokens as $name => $info) {

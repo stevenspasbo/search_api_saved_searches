@@ -8,7 +8,7 @@ use Drupal\Component\Annotation\Plugin;
  * Defines a notification plugin annotation object.
  *
  * @see \Drupal\search_api_saved_searches\Notification\NotificationPluginManager
- * @see \Drupal\search_api_saved_searches\Notification\NotificationInterface
+ * @see \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface
  * @see \Drupal\search_api_saved_searches\Notification\NotificationPluginBase
  * @see plugin_api
  *

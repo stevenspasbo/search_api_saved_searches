@@ -4,6 +4,7 @@ namespace Drupal\search_api_saved_searches\Notification;
 
 use Drupal\search_api\Plugin\ConfigurablePluginBase;
 use Drupal\search_api_saved_searches\Annotation\SearchApiSavedSearchesNotification;
+use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
 
 /**
  * Defines a base class for notification plugins.
@@ -29,9 +30,42 @@ use Drupal\search_api_saved_searches\Annotation\SearchApiSavedSearchesNotificati
  *
  * @see \Drupal\search_api_saved_searches\Annotation\SearchApiSavedSearchesNotification
  * @see \Drupal\search_api_saved_searches\Notification\DataTypePluginManager
- * @see \Drupal\search_api_saved_searches\Notification\NotificationInterface
+ * @see \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface
  * @see plugin_api
  */
-abstract class NotificationPluginBase extends ConfigurablePluginBase implements NotificationInterface {
+abstract class NotificationPluginBase extends ConfigurablePluginBase implements NotificationPluginInterface {
+
+  /**
+   * The saved search type to which this plugin is attached.
+   *
+   * @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface
+   */
+  protected $savedSearchType;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition) {
+    if (!empty($configuration['#saved_search_type']) && $configuration['#saved_search_type'] instanceof SavedSearchTypeInterface) {
+      $this->setSavedSearchType($configuration['#saved_search_type']);
+      unset($configuration['#saved_search_type']);
+    }
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSavedSearchType() {
+    return $this->savedSearchType;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setSavedSearchType($savedSearchType) {
+    $this->savedSearchType = $savedSearchType;
+    return $this;
+  }
 
 }

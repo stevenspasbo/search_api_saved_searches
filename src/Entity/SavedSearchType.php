@@ -8,6 +8,8 @@ use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\search_api\Utility\QueryHelperInterface;
+use Drupal\search_api_saved_searches\Notification\NotificationPluginInterface;
+use Drupal\search_api_saved_searches\SavedSearchesException;
 use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
 
 /**
@@ -41,8 +43,9 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     "uuid" = "uuid",
  *   },
  *   config_export = {
- *     "id" = "id",
- *     "label" = "label",
+ *     "id",
+ *     "label",
+ *     "notification_settings",
  *     "options",
  *   },
  *   links = {
@@ -71,11 +74,83 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
   protected $label;
 
   /**
+   * The settings of the notification plugins selected for this index.
+   *
+   * The array has the following structure:
+   *
+   * @code
+   * [
+   *   'NOTIFICATION_PLUGIN_ID' => [
+   *     // Settings …
+   *   ],
+   *   …
+   * ]
+   * @endcode
+   *
+   * @var array
+   */
+  protected $notification_settings = [];
+
+  /**
    * The settings for this type.
    *
    * @var array
    */
   protected $options = [];
+
+  /**
+   * The instantiated notification plugins.
+   *
+   * In the ::preSave method we're saving the contents of these back into the
+   * $notification_settings array. When adding, removing or changing
+   * configuration we should therefore always manipulate this property instead
+   * of the stored one.
+   *
+   * @var \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface[]|null
+   *
+   * @see getNotificationPlugins()
+   */
+  protected $notificationPluginInstances;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function preSave(EntityStorageInterface $storage) {
+    parent::preSave($storage);
+
+    // If we are in the process of syncing, we shouldn't change any entity
+    // properties (or other configuration).
+    if ($this->isSyncing()) {
+      return;
+    }
+
+    // @todo Do we need to check config overrides here?
+
+    // Write the notification plugin settings to the persistent
+    // $notification_settings property.
+    $this->writeChangesToSettings();
+  }
+
+  /**
+   * Prepares for changes to this saved search type to be persisted.
+   *
+   * To this end, the settings for all loaded notification plugin objects are
+   * written back to the $notification_settings property.
+   *
+   * @return $this
+   */
+  protected function writeChangesToSettings() {
+    // We only need to re-write the $notification_settings property if the
+    // plugins were loaded.
+    if ($this->notificationPluginInstances !== NULL) {
+      $this->notification_settings = [];
+      foreach ($this->notificationPluginInstances as $plugin_id => $plugin) {
+        $this->notification_settings[$plugin_id] = $plugin->getConfiguration();
+      }
+    }
+
+    return $this;
+  }
 
   /**
    * {@inheritdoc}
@@ -141,6 +216,84 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
   /**
    * {@inheritdoc}
    */
+  public function getNotificationPlugins() {
+    if ($this->notificationPluginInstances === NULL) {
+      $this->notificationPluginInstances = \Drupal::getContainer()
+        ->get('plugin.manager.search_api_saved_searches.notification')
+        ->createPlugins($this, array_keys($this->notification_settings));
+    }
+
+    return $this->notificationPluginInstances;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getNotificationPluginIds() {
+    return array_keys($this->getNotificationPlugins());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isValidNotificationPlugin($notification_plugin_id) {
+    $notification_plugins = $this->getNotificationPlugins();
+    return !empty($notification_plugins[$notification_plugin_id]);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getNotificationPlugin($notification_plugin_id) {
+    $notification_plugins = $this->getNotificationPlugins();
+
+    if (empty($notification_plugins[$notification_plugin_id])) {
+      $index_label = $this->label();
+      throw new SavedSearchesException("The datasource with ID '$notification_plugin_id' could not be retrieved for index '$index_label'.");
+    }
+
+    return $notification_plugins[$notification_plugin_id];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function addNotificationPlugin(NotificationPluginInterface $notification_plugin) {
+    // Make sure the notificationPluginInstances are loaded before trying to add
+    // a plugin to them.
+    if ($this->notificationPluginInstances === NULL) {
+      $this->getNotificationPlugins();
+    }
+    $this->notificationPluginInstances[$notification_plugin->getPluginId()] = $notification_plugin;
+
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function removeNotificationPlugin($notification_plugin_id) {
+    // Make sure the notificationPluginInstances are loaded before trying to
+    // remove a plugin from them.
+    if ($this->notificationPluginInstances === NULL) {
+      $this->getNotificationPlugins();
+    }
+    unset($this->notificationPluginInstances[$notification_plugin_id]);
+
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setNotificationPlugins(array $notification_plugins = NULL) {
+    $this->notificationPluginInstances = $notification_plugins;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getOptions() {
     return $this->options;
   }
@@ -169,6 +322,214 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
       return $result->getQuery();
     }
     return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    $dependencies = $this->getDependencyData();
+    // Keep only "enforced" dependencies, then add those computed by
+    // getDependencyData().
+    $this->dependencies = array_intersect_key($this->dependencies, ['enforced' => TRUE]);
+    $this->dependencies += array_map('array_keys', $dependencies);
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function onDependencyRemoval(array $dependencies) {
+    $changed = parent::onDependencyRemoval($dependencies);
+
+    $all_plugins = $this->getNotificationPlugins();
+    $dependency_data = $this->getDependencyData();
+    // Make sure our dependency data has the exact same keys as $dependencies,
+    // to simplify the subsequent code.
+    $dependencies = array_filter($dependencies);
+    $dependency_data = array_intersect_key($dependency_data, $dependencies);
+    $dependency_data += array_fill_keys(array_keys($dependencies), []);
+    $call_on_removal = [];
+
+    foreach ($dependencies as $dependency_type => $dependency_objects) {
+      // Annoyingly, modules and theme dependencies come not keyed by dependency
+      // name here, while entities do. Flip the array for modules and themes to
+      // make the code simpler.
+      if (in_array($dependency_type, ['module', 'theme'])) {
+        $dependency_objects = array_flip($dependency_objects);
+      }
+      $dependency_data[$dependency_type] = array_intersect_key($dependency_data[$dependency_type], $dependency_objects);
+      foreach ($dependency_data[$dependency_type] as $name => $dependency_sources) {
+        // We first remove all the "hard" dependencies.
+        if (!empty($dependency_sources['always'])) {
+          // This will definitely lead to a change (or to us returning FALSE
+          // directly).
+          $changed = TRUE;
+
+          foreach ($dependency_sources['always'] as $plugin_type => $plugins) {
+            // We can hardly remove the entity itself, so just give up.
+            if ($plugin_type === 'entity') {
+              return FALSE;
+            }
+
+            // Otherwise, the dependency has to come from one or more
+            // notification plugins. So, remove them.
+            $all_plugins = array_diff_key($all_plugins, $plugins);
+          }
+        }
+
+        // Then, collect all the optional ones.
+        if (!empty($dependency_sources['optional'])) {
+          // However this plays out, it will lead to a change.
+          $changed = TRUE;
+
+          foreach ($dependency_sources['optional'] as $plugin_type => $plugins) {
+            // Type entities currently have no soft dependencies, so this has to
+            // be a plugin dependency. We want to call onDependencyRemoval() on
+            // that plugin.
+
+            // Only include those plugins that have not already been removed.
+            $plugins = array_intersect_key($plugins, $all_plugins);
+
+            foreach ($plugins as $plugin_id => $plugin) {
+              $call_on_removal[$plugin_type][$plugin_id][$dependency_type][$name] = $dependency_objects[$name];
+            }
+          }
+        }
+      }
+    }
+
+    // Now for all plugins with optional dependencies (stored in
+    // $call_on_removal, mapped to their removed dependencies) call their
+    // onDependencyRemoval() methods.
+    $updated_config = [];
+    foreach ($call_on_removal as $plugin_type => $plugins) {
+      foreach ($plugins as $plugin_id => $plugin_dependencies) {
+        $removal_successful = $all_plugins[$plugin_id]->onDependencyRemoval($plugin_dependencies);
+        // If the plugin was successfully changed to remove the dependency,
+        // remember the new configuration to later set it. Otherwise, remove the
+        // plugin from the index so the dependency still gets removed.
+        if ($removal_successful) {
+          $updated_config[$plugin_type][$plugin_id] = $all_plugins[$plugin_id]->getConfiguration();
+        }
+        else {
+          unset($all_plugins[$plugin_id]);
+        }
+      }
+    }
+
+    // Finally, apply the changes by removing all plugins that have been unset
+    // from $all_plugins.
+    $this->notificationPluginInstances = array_intersect_key($this->notificationPluginInstances, $all_plugins);
+
+    return $changed;
+  }
+
+  /**
+   * Retrieves data about this type's dependencies.
+   *
+   * The return value is structured as follows:
+   *
+   * @code
+   * [
+   *   'config' => [
+   *     'CONFIG_DEPENDENCY_KEY' => [
+   *       'always' => [
+   *         'entity' => [
+   *           'TYPE_ID' => $type,
+   *         ],
+   *         'notification' => [
+   *           'NOTIFICATION_ID' => $notification_plugin,
+   *         ],
+   *       ],
+   *       'optional' => [
+   *         'notification' => [
+   *           'NOTIFICATION_ID' => $notification_plugin,
+   *         ],
+   *       ],
+   *     ],
+   *   ],
+   * ]
+   * @endcode
+   *
+   * Enforced dependencies are not included in this method's return value.
+   *
+   * @return object[][][][][]
+   *   An associative array containing the type's dependencies. The array is
+   *   first keyed by the config dependency type ("module", "config", etc.) and
+   *   then by the names of the config dependencies of that type which the
+   *   entity has. The values are associative arrays with up to two keys,
+   *   "always" and "optional", specifying whether the dependency is a hard one
+   *   by the plugin (or entity) in question or potentially depending on the
+   *   configuration. The values on this level are arrays with keys "entity"
+   *   and/or "notification" and values arrays of IDs mapped to their
+   *   entities/plugins.
+   */
+  protected function getDependencyData() {
+    $dependency_data = [];
+
+    // Since calculateDependencies() will work directly on the $dependencies
+    // property, we first save its original state and then restore it
+    // afterwards.
+    $original_dependencies = $this->dependencies;
+    parent::calculateDependencies();
+    unset($this->dependencies['enforced']);
+    foreach ($this->dependencies as $dependency_type => $list) {
+      foreach ($list as $name) {
+        $dependency_data[$dependency_type][$name]['always']['entity'][$this->id] = $this;
+      }
+    }
+    $this->dependencies = $original_dependencies;
+
+    // In theory, we also depend on all existing indexes (since we store their
+    // IDs in $this->options['date_field']) and all search displays (in
+    // $this->options['displays']). However, since having unknown plugin/entity
+    // IDs there doesn't really cause any problems, we don't include them as
+    // optional dependencies here.
+
+    $plugins = $this->getNotificationPlugins();
+    foreach ($plugins as $plugin_id => $plugin) {
+      // Largely copied from
+      // \Drupal\Core\Plugin\PluginDependencyTrait::calculatePluginDependencies().
+      $definition = $plugin->getPluginDefinition();
+
+      // First, always depend on the module providing the plugin.
+      $dependency_data['module'][$definition['provider']]['always']['notification'][$plugin_id] = $plugin;
+
+      // Plugins can declare additional dependencies in their definition.
+      if (isset($definition['config_dependencies'])) {
+        foreach ($definition['config_dependencies'] as $dependency_type => $list) {
+          foreach ($list as $name) {
+            $dependency_data[$dependency_type][$name]['always']['notification'][$plugin_id] = $plugin;
+          }
+        }
+      }
+
+      // Then, add the dynamically-calculated dependencies of the plugin.
+      foreach ($plugin->calculateDependencies() as $dependency_type => $list) {
+        foreach ($list as $name) {
+          $dependency_data[$dependency_type][$name]['optional']['notification'][$plugin_id] = $plugin;
+        }
+      }
+    }
+
+    return $dependency_data;
+  }
+
+  /**
+   * Implements the magic __sleep() method.
+   *
+   * Prevents the instantiated plugins from being serialized.
+   */
+  public function __sleep() {
+    // First, write any plugin changes to the persistent properties so they
+    // won't be discarded.
+    $this->writeChangesToSettings();
+
+    // Then, return a list of all properties that don't contain objects.
+    $properties = get_object_vars($this);
+    unset($properties['notificationPluginInstances']);
+    return array_keys($properties);
   }
 
 }

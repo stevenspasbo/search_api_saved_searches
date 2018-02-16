@@ -10,6 +10,12 @@ search_api_saved_searches.type.*:
     label:
       type: string
       label: 'Label'
+    notification_settings:
+      type: sequence
+      label: 'Notification plugin settings'
+      sequence:
+        type: plugin.plugin_configuration.search_api_saved_searches_notification.[%key]
+        label: 'The configuration for a single notification plugin'
     options:
       type: mapping
       label: 'Options'

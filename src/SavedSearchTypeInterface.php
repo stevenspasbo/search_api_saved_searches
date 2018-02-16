@@ -4,6 +4,7 @@ namespace Drupal\search_api_saved_searches;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\search_api\Utility\QueryHelperInterface;
+use Drupal\search_api_saved_searches\Notification\NotificationPluginInterface;
 
 /**
  * Provides an interface for saved search types.
@@ -11,10 +12,90 @@ use Drupal\search_api\Utility\QueryHelperInterface;
 interface SavedSearchTypeInterface extends ConfigEntityInterface {
 
   /**
-   * Retrieves the settings.
+   * Retrieves this saved search type's notification plugins.
+   *
+   * @return \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface[]
+   *   The notification plugins used by this saved search type, keyed by plugin
+   *   ID.
+   */
+  public function getNotificationPlugins();
+
+  /**
+   * Retrieves the IDs of all notification plugins enabled for this type.
+   *
+   * @return string[]
+   *   The IDs of the notification plugins used by this saved search type.
+   */
+  public function getNotificationPluginIds();
+
+  /**
+   * Determines whether the given notification plugin ID is valid for this type.
+   *
+   * The general contract of this method is that it should return TRUE if, and
+   * only if, a call to getNotificationPlugin() with the same ID would not
+   * result in an exception.
+   *
+   * @param string $notification_plugin_id
+   *   A notification plugin ID.
+   *
+   * @return bool
+   *   TRUE if the notification plugin with the given ID is enabled for this
+   *   saved search type and can be loaded. FALSE otherwise.
+   */
+  public function isValidNotificationPlugin($notification_plugin_id);
+
+  /**
+   * Retrieves a specific notification plugin for this saved search type.
+   *
+   * @param string $notification_plugin_id
+   *   The ID of the notification plugin to return.
+   *
+   * @return \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface
+   *   The notification plugin with the given ID.
+   *
+   * @throws \Drupal\search_api_saved_searches\SavedSearchesException
+   *   Thrown if the specified notification plugin isn't enabled for this saved
+   *   search type, or couldn't be loaded.
+   */
+  public function getNotificationPlugin($notification_plugin_id);
+
+  /**
+   * Adds a notification plugin to this saved search type.
+   *
+   * An existing notification plugin with the same ID will be replaced.
+   *
+   * @param \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface $notification_plugin
+   *   The notification plugin to be added.
+   *
+   * @return $this
+   */
+  public function addNotificationPlugin(NotificationPluginInterface $notification_plugin);
+
+  /**
+   * Removes a notification plugin from this saved search type.
+   *
+   * @param string $notification_plugin_id
+   *   The ID of the notification plugin to remove.
+   *
+   * @return $this
+   */
+  public function removeNotificationPlugin($notification_plugin_id);
+
+  /**
+   * Sets this saved search type's notification plugins.
+   *
+   * @param \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface[] $notification_plugins
+   *   An array of notification plugins.
+   *
+   * @return $this
+   */
+  public function setNotificationPlugins(array $notification_plugins);
+
+  /**
+   * Retrieves the type options.
    *
    * @return array
-   *   The settings for this type.
+   *   The options set for this type.
    */
   public function getOptions();
 
