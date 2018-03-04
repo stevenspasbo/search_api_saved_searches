@@ -155,7 +155,7 @@ class SavedSearchTypeForm extends EntityForm {
       $form['#title'] = $this->t('Edit saved search type %type', $args);
     }
 
-    $form['name'] = [
+    $form['label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Type name'),
       '#description' => $this->t('Enter the displayed name for the saved search type.'),
