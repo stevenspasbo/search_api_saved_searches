@@ -2,8 +2,10 @@
 
 namespace Drupal\search_api_saved_searches\Notification;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\search_api\Plugin\ConfigurablePluginBase;
 use Drupal\search_api_saved_searches\Annotation\SearchApiSavedSearchesNotification;
+use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
 
 /**
@@ -66,6 +68,13 @@ abstract class NotificationPluginBase extends ConfigurablePluginBase implements 
   public function setSavedSearchType($savedSearchType) {
     $this->savedSearchType = $savedSearchType;
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldDefinitions() {
+    return [];
   }
 
 }

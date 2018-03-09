@@ -201,7 +201,7 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
             'created' => TRUE,
             'langcode' => TRUE,
             'last_executed' => TRUE,
-            'last_queued' => TRUE,
+            'next_execution' => TRUE,
             'uid' => TRUE,
           ],
         ])->save();
@@ -211,6 +211,10 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
         watchdog_exception('search_api_saved_searches', $e, '%type while trying to configure the "Create" form display for the new saved search type %label: @message in %function (line %line of %file).', $vars);
       }
     }
+
+    // @todo When changing the "date_field" for one or more indexes from/to the
+    //   "Determine by result ID" option, we need to prime/delete the results
+    //   data for all affected saved searches.
   }
 
   /**

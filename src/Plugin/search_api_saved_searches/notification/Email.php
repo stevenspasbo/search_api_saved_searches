@@ -3,11 +3,16 @@
 namespace Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\search_api\Plugin\PluginFormTrait;
+use Drupal\search_api\Query\ResultSetInterface;
+use Drupal\search_api_saved_searches\BundleFieldDefinition;
 use Drupal\search_api_saved_searches\Notification\NotificationPluginBase;
+use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -24,6 +29,25 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
   use PluginFormTrait;
 
   /**
+   * Drupal mail key for the "New results" mail.
+   */
+  const MAIL_NEW_RESULTS = 'new_results';
+
+  /**
+   * The mail service.
+   *
+   * @var \Drupal\Core\Mail\MailManagerInterface|null
+   */
+  protected $mailService;
+
+  /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface|null
+   */
+  protected $configFactory;
+
+  /**
    * The token service.
    *
    * @var \Drupal\Core\Utility\Token|null
@@ -37,9 +61,57 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
     /** @var static $plugin */
     $plugin = parent::create($container, $configuration, $plugin_id, $plugin_definition);
 
+    $plugin->setMailService($container->get('plugin.manager.mail'));
+    $plugin->setConfigFactory($container->get('config.factory'));
     $plugin->setTokenService($container->get('token'));
 
     return $plugin;
+  }
+
+  /**
+   * Retrieves the mail service.
+   *
+   * @return \Drupal\Core\Mail\MailManagerInterface
+   *   The mail service.
+   */
+  public function getMailService() {
+    return $this->mailService ?: \Drupal::service('plugin.manager.mail');
+  }
+
+  /**
+   * Sets the mail service.
+   *
+   * @param \Drupal\Core\Mail\MailManagerInterface $mail_service
+   *   The new mail service.
+   *
+   * @return $this
+   */
+  public function setMailService(MailManagerInterface $mail_service) {
+    $this->mailService = $mail_service;
+    return $this;
+  }
+
+  /**
+   * Retrieves the config factory.
+   *
+   * @return \Drupal\Core\Config\ConfigFactoryInterface
+   *   The config factory.
+   */
+  public function getConfigFactory() {
+    return $this->configFactory ?: \Drupal::service('config.factory');
+  }
+
+  /**
+   * Sets the config factory.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The new config factory.
+   *
+   * @return $this
+   */
+  public function setConfigFactory(ConfigFactoryInterface $config_factory) {
+    $this->configFactory = $config_factory;
+    return $this;
   }
 
   /**
@@ -148,9 +220,45 @@ If you didn't create this saved search, just ignore this mail and the saved sear
       '#states' => $states,
     ];
 
-    $available_tokens = $this->getAvailableTokensList(['site', 'user']);
+    $types = ['site', 'user', 'search_api_saved_search'];
+    $available_tokens = $this->getAvailableTokensList($types);
+    $form['notification']['available_tokens'] = $available_tokens;
 
-    $form['activate']['available_tokens'] = $available_tokens;
+    $form['notification'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Notification mail'),
+      '#open' => !$this->configuration['notification']['title'],
+    ];
+    $args = ['@site_name' => '[site:name]'];
+    $default_title = $this->configuration['notification']['title'] ?: $this->t('New results for your saved search at @site_name', $args);
+    $args['@search_label'] = '[search_api_saved_search:label]';
+    $args['@results_links'] = '[search_api_results:links]';
+    $default_body = $this->configuration['notification']['body']
+      ?: $this->t('There are new results for your saved search "@search_label":
+      
+@results_links
+
+--  @site_name team', $args);
+    $form['notification']['title'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Subject'),
+      '#description' => $this->t("Enter the mail's subject.") . ' ' .
+        $this->t('See below for available replacements.'),
+      '#default_value' => $default_title,
+      '#required' => TRUE,
+    ];
+    $form['notification']['body'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Body'),
+      '#description' => $this->t("Enter the mail's body.") . ' ' .
+        $this->t('See below for available replacements.'),
+      '#default_value' => $default_body,
+      '#rows' => 12,
+      '#required' => TRUE,
+    ];
+
+    $available_tokens[] = 'search_api_results';
+    $form['notification']['available_tokens'] = $available_tokens;
 
     return $form;
   }
@@ -192,6 +300,124 @@ If you didn't create this saved search, just ignore this mail and the saved sear
       '#items' => $token_items,
     ];
     return $available_tokens;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldDefinitions() {
+    $fields['mail'] = BundleFieldDefinition::create('email')
+      ->setLabel(t('E-mail'))
+      ->setDescription(t('The email address to which notifications should be sent.'))
+      ->setDefaultValueCallback('Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification\Email::getDefaultMail')
+      ->setDisplayOptions('view', [
+        'type' => 'timestamp',
+        'weight' => 0,
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'datetime_timestamp',
+        'weight' => 10,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
+
+    return $fields;
+  }
+
+  /**
+   * Returns the default mail address to set for a new saved search.
+   *
+   * @return array
+   *   An array with the default value.
+   */
+  public static function getDefaultMail() {
+    $mail = \Drupal::currentUser()->getEmail();
+    return $mail ? [$mail] : [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function notify(SavedSearchInterface $search, ResultSetInterface $results) {
+    $account = $search->getOwner();
+
+    // Method of determining site mail taken from _user_mail_notify().
+    $site_config = $this->getConfigFactory()->get('system.site');
+    $site_mail = $site_config->get('mail_notification');
+    if (empty($site_mail)) {
+      $site_mail = $site_config->get('mail');
+    }
+    if (empty($site_mail)) {
+      $site_mail = ini_get('sendmail_from');
+    }
+
+    $params = [
+      'search' => $search,
+      'results' => $results,
+      'plugin' => $this,
+    ];
+    $this->getMailService()
+      ->mail('search_api_saved_searches', self::MAIL_NEW_RESULTS, $account->getEmail(), $account->getPreferredLangcode(), $params, $site_mail);
+  }
+
+  /**
+   *
+   * Prepares a message containing new saved search results.
+   *
+   * @param array $message
+   *   An array to be filled in. Elements in this array include:
+   *   - id: An ID to identify the mail sent. Look at module source code or
+   *     MailManagerInterface->mail() for possible id values.
+   *   - to: The address or addresses the message will be sent to. The
+   *     formatting of this string must comply with RFC 2822.
+   *   - subject: Subject of the email to be sent. This must not contain any
+   *     newline characters, or the mail may not be sent properly.
+   *     MailManagerInterface->mail() sets this to an empty string when the hook
+   *     is invoked.
+   *   - body: An array of lines containing the message to be sent. Drupal will
+   *     format the correct line endings for you. MailManagerInterface->mail()
+   *     sets this to an empty array when the hook is invoked. The array may
+   *     contain either strings or objects implementing
+   *     \Drupal\Component\Render\MarkupInterface.
+   *   - from: The address the message will be marked as being from, which is
+   *     set by MailManagerInterface->mail() to either a custom address or the
+   *     site-wide default email address when the hook is invoked.
+   *   - headers: Associative array containing mail headers, such as From,
+   *     Sender, MIME-Version, Content-Type, etc.
+   *     MailManagerInterface->mail() pre-fills several headers in this array.
+   * @param array $params
+   *   An associative array with the following keys:
+   *   - search: The saved search entity for which results are
+   *     being reported.
+   *   - results: A Search API result set containing the new results.
+   *
+   * @see hook_mail()
+   * @see search_api_saved_searches_mail()
+   */
+  public function getNewResultsMail(&$message, $params) {
+    /** @var \Drupal\search_api_saved_searches\SavedSearchInterface $search */
+    $search = $params['search'];
+    $account = $search->getOwner();
+    /** @var \Drupal\search_api\Query\ResultSetInterface $results */
+    $results = $params['results'];
+    $data = [
+      'search_api_saved_search' => $search,
+      'search_api_results' => $results,
+      'user' => $account,
+    ];
+    $options['langcode'] = $account->getPreferredLangcode();
+
+    $subject = $this->configuration['notification']['title'];
+    $subject = $this->getTokenService()->replace($subject, $data, $options);
+    $body = $this->configuration['notification']['body'];
+    $body = $this->getTokenService()->replace($body, $data, $options);
+
+    $message['subject'] = $subject;
+    $message['body'] = $body;
+  }
+
+  public function getActivationMail(&$message, $params) {
+    // @todo
+    // Remember "[activation_link]" pseudo-token replacement.
   }
 
 }

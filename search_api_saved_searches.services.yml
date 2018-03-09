@@ -6,3 +6,7 @@ services:
   plugin.manager.search_api_saved_searches.notification:
     class: Drupal\search_api_saved_searches\Notification\NotificationPluginManager
     parent: default_plugin_manager
+
+  search_api_saved_searches.new_results_check:
+    class: Drupal\search_api_saved_searches\NewResultsCheck
+    arguments: []

@@ -2,4 +2,6 @@ id: 'default'
 status: true
 langcode: en
 label: 'Default'
+notification_settings:
+  email: {}
 options: {}

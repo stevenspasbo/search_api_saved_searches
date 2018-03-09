@@ -4,3 +4,38 @@
  * @file
  * Allows visitors to bookmark searches and get notifications for new results.
  */
+
+use Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification\Email;
+
+/**
+ * Implements hook_cron().
+ */
+function search_api_saved_searches_cron() {
+  \Drupal::getContainer()
+    ->get('search_api_saved_searches.new_results_check')
+    ->checkAll();
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * Implemented on behalf of the "E-mail" notification plugin.
+ *
+ * @see \Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification\Email
+ */
+function search_api_saved_searches_mail($key, &$message, $params) {
+  if (empty($params['plugin'])) {
+    return;
+  }
+  $plugin = $params['plugin'];
+  if (!($plugin instanceof Email)) {
+    return;
+  }
+
+  switch ($key) {
+    case Email::MAIL_NEW_RESULTS:
+      $plugin->getNewResultsMail($message, $params);
+      break;
+  }
+}
+

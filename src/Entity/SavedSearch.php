@@ -3,8 +3,10 @@
 namespace Drupal\search_api_saved_searches\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\search_api_saved_searches\SavedSearchesException;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Drupal\user\UserInterface;
 
@@ -57,6 +59,24 @@ use Drupal\user\UserInterface;
 class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
 
   /**
+   * The search type for this saved search, or FALSE if loading it failed.
+   *
+   * @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface|false|null
+   *
+   * @see \Drupal\search_api_saved_searches\Entity\SavedSearch::getType()
+   */
+  protected $type;
+
+  /**
+   * The search query for this saved search, or FALSE if loading it failed.
+   *
+   * @var \Drupal\search_api\Query\QueryInterface|false|null
+   *
+   * @see \Drupal\search_api_saved_searches\Entity\SavedSearch::getQuery()
+   */
+  protected $query;
+
+  /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
@@ -99,37 +119,9 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
-    // @todo If we want the notification mechanism to be configurable, this
-    //   probably shouldn't be here (but in bundleFieldDefinitions(), probably).
-    $fields['mail'] = BaseFieldDefinition::create('email')
-      ->setLabel(t('E-mail'))
-      ->setDescription(t('The email address to which notifications should be sent.'))
-      ->setDisplayOptions('view', [
-        'type' => 'timestamp',
-        'weight' => 0,
-      ])
-      ->setDisplayOptions('form', [
-        'type' => 'datetime_timestamp',
-        'weight' => 10,
-      ])
-      ->setDisplayConfigurable('form', TRUE);
-
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
       ->setDescription(t('The time that the saved search was created.'))
-      ->setDisplayOptions('view', [
-        'type' => 'timestamp',
-        'weight' => 0,
-      ])
-      ->setDisplayOptions('form', [
-        'type' => 'datetime_timestamp',
-        'weight' => 10,
-      ])
-      ->setDisplayConfigurable('form', TRUE);
-
-    $fields['last_queued'] = BaseFieldDefinition::create('created')
-      ->setLabel(t('Last queued'))
-      ->setDescription(t('The time that the saved search was last queued for execution.'))
       ->setDisplayOptions('view', [
         'type' => 'timestamp',
         'weight' => 0,
@@ -152,6 +144,18 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
         'weight' => 10,
       ])
       ->setDisplayConfigurable('form', TRUE);
+
+    $fields['next_execution'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel(t('Next execution'))
+      ->setDescription(t('The next time this saved search should be executed.'))
+      ->setDisplayOptions('view', [
+        'type' => 'timestamp',
+        'weight' => 0,
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'datetime_timestamp',
+        'weight' => 10,
+      ]);
 
     $fields['notify_interval'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Notification interval'))
@@ -202,6 +206,23 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public static function bundleFieldDefinitions(EntityTypeInterface $entity_type, $bundle, array $base_field_definitions) {
+    $fields = parent::bundleFieldDefinitions($entity_type, $bundle, $base_field_definitions);
+
+    /** @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface $type */
+    $type = \Drupal::entityTypeManager()
+      ->getStorage('search_api_saved_search_type')
+      ->load($bundle);
+    foreach ($type->getNotificationPlugins() as $plugin) {
+      $fields += $plugin->getFieldDefinitions();
+    }
+
+    return $fields;
+  }
+
+  /**
    * Returns the default value for the "uid" base field definition.
    *
    * @return array
@@ -211,6 +232,53 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
    */
   public static function getCurrentUserId() {
     return [\Drupal::currentUser()->id()];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function preSave(EntityStorageInterface $storage) {
+    parent::preSave($storage);
+
+    $notify_interval = $this->get('notify_interval')->value;
+    if ($notify_interval >= 0) {
+      $last_executed = $this->get('last_executed')->value;
+      $this->set('next_execution', $last_executed + $notify_interval);
+    }
+    else {
+      $this->set('next_execution', NULL);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    parent::postSave($storage, $update);
+
+    // For newly inserted saved searches with "Determine by result ID" detection
+    // mode, prime the list of known results.
+    if (!$update) {
+      try {
+        $type = $this->getType();
+      }
+      catch (SavedSearchesException $e) {
+        return;
+      }
+      $query = $this->getQuery();
+      if (!$query) {
+        return;
+      }
+      $index_id = $query->getIndex()->id();
+      $date_field = $type->getOption("date_field.$index_id");
+      if (!$date_field) {
+        // Prime the "search_api_saved_searches_old_results" table with entries
+        // for all current results.
+        \Drupal::getContainer()
+          ->get('search_api_saved_searches.new_results_check')
+          ->getNewResults($this);
+      }
+    }
   }
 
   /**
@@ -250,6 +318,38 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   public function setOwnerId($uid) {
     $this->set('uid', $uid);
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getType() {
+    if ($this->type === NULL) {
+      $type = \Drupal::entityTypeManager()
+        ->getStorage('search_api_saved_search_type')
+        ->load($this->bundle());
+      $this->type = $type ?: FALSE;
+    }
+
+    if (!$this->type) {
+      throw new SavedSearchesException("Saved search #{$this->id()} does not have a valid type set");
+    }
+    return $this->type;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getQuery() {
+    if ($this->query === NULL) {
+      $this->query = FALSE;
+      $query = $this->get('query')->value;
+      if ($query) {
+        $this->query = unserialize($query);
+      }
+    }
+
+    return $this->query ?: NULL;
   }
 
 }
