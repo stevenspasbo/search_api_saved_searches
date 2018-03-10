@@ -1,7 +1,7 @@
 # Schema for "Save search" block settings
 
 block.settings.search_api_saved_searches:
-  type: mapping
+  type: block_settings
   label: 'Save Search block settings'
   mapping:
     type:
