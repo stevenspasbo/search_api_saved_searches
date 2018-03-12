@@ -6,3 +6,5 @@ core: 8.x
 type: module
 package: Search
 configure: entity.search_api_saved_search_type.collection
+dependencies:
+  - system (>=8.5)

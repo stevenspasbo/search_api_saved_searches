@@ -1,7 +1,7 @@
 # Schema for the Search API Saved Searches module settings
 
 search_api_saved_searches.settings:
-  type: mapping
+  type: config_object
   label: 'Search API Saved Searches settings'
   mapping:
     cron_batch_size:

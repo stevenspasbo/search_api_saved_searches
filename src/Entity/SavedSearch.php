@@ -185,10 +185,10 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ->setDescription(t('The saved search query.'))
       ->setSetting('case_sensitive', TRUE)
       ->setDisplayOptions('view', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ])
       ->setDisplayOptions('form', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ]);
 
     $fields['options'] = BaseFieldDefinition::create('string_long')
@@ -196,10 +196,10 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ->setDescription(t('Further options for this saved search.'))
       ->setSetting('case_sensitive', TRUE)
       ->setDisplayOptions('view', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ])
       ->setDisplayOptions('form', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ]);
 
     return $fields;
