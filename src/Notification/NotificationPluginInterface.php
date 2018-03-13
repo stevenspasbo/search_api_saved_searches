@@ -2,10 +2,10 @@
 
 namespace Drupal\search_api_saved_searches\Notification;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\search_api\Plugin\ConfigurablePluginInterface;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
+use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
 
 /**
  * Provides an interface for notification plugins.
@@ -28,22 +28,24 @@ interface NotificationPluginInterface extends ConfigurablePluginInterface {
   /**
    * Sets the saved search type.
    *
-   * @param \Drupal\search_api_saved_searches\SavedSearchTypeInterface $savedSearchType
+   * @param \Drupal\search_api_saved_searches\SavedSearchTypeInterface $type
    *   The new saved search type for this plugin.
    *
    * @return $this
    */
-  public function setSavedSearchType($savedSearchType);
+  public function setSavedSearchType(SavedSearchTypeInterface $type);
 
   /**
    * Retrieves the field definitions to add to saved searches for this plugin.
    *
-   * This, together with alterSavedSearchForm(), allows the plugin to store
-   *
    * The field definitions will be added to all bundles for which this
    * notification plugin is active.
    *
-   * @return \Drupal\Core\Field\FieldDefinitionInterface[]
+   * If an existing plugin's field definitions change in any way, it is the
+   * providing module's responsibility to provide an update hook calling field
+   * storage definition listener's CRUD methods as appropriate.
+   *
+   * @return \Drupal\search_api_saved_searches\BundleFieldDefinition[]
    *   An array of bundle field definitions, keyed by field name.
    */
   public function getFieldDefinitions();

@@ -215,9 +215,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
     $type = \Drupal::entityTypeManager()
       ->getStorage('search_api_saved_search_type')
       ->load($bundle);
-    foreach ($type->getNotificationPlugins() as $plugin) {
-      $fields += $plugin->getFieldDefinitions();
-    }
+    $fields += $type->getNotificationPluginFieldDefinitions();
 
     return $fields;
   }

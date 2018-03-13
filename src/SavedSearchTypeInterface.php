@@ -92,6 +92,15 @@ interface SavedSearchTypeInterface extends ConfigEntityInterface {
   public function setNotificationPlugins(array $notification_plugins);
 
   /**
+   * Retrieves all field definitions defined by notification plugins.
+   *
+   * @return \Drupal\Core\Field\FieldDefinitionInterface[]
+   *   All field definitions defined by notification plugins for this type,
+   *   keyed by field name.
+   */
+  public function getNotificationPluginFieldDefinitions();
+
+  /**
    * Retrieves the type options.
    *
    * @return array

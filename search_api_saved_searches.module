@@ -5,6 +5,8 @@
  * Allows visitors to bookmark searches and get notifications for new results.
  */
 
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\search_api_saved_searches\Entity\SavedSearch;
 use Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification\Email;
 
 /**
@@ -14,6 +16,29 @@ function search_api_saved_searches_cron() {
   \Drupal::getContainer()
     ->get('search_api_saved_searches.new_results_check')
     ->checkAll();
+}
+
+/**
+ * Implements hook_entity_field_storage_info().
+ */
+function search_api_saved_searches_entity_field_storage_info(EntityTypeInterface $entity_type) {
+  if ($entity_type->id() !== 'search_api_saved_search') {
+    return [];
+  }
+
+  // Add field storage definitions for all notification plugin-provided fields.
+  $fields = [];
+
+  $bundles = \Drupal::getContainer()
+    ->get('entity_type.bundle.info')
+    ->getBundleInfo('search_api_saved_search');
+  foreach (array_keys($bundles) as $bundle) {
+    // We don't use the $base_field_definitions parameter in that method, so no
+    // need to retrieve those for passing them here.
+    $fields += SavedSearch::bundleFieldDefinitions($entity_type, $bundle, []);
+  }
+
+  return $fields;
 }
 
 /**
@@ -38,4 +63,3 @@ function search_api_saved_searches_mail($key, &$message, $params) {
       break;
   }
 }
-

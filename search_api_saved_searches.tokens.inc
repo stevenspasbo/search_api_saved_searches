@@ -6,7 +6,7 @@
  */
 
 use Drupal\Core\Render\BubbleableMetadata;
-use Drupal\Core\Utility\Error;
+use Drupal\Core\Url;
 use Drupal\search_api\SearchApiException;
 use Drupal\user\Entity\User;
 
@@ -103,10 +103,19 @@ function search_api_saved_searches_tokens($type, $tokens, array $data, array $op
     $user = $data['user'];
 
     if (isset($tokens['search-api-saved-searches-url'])) {
-      # @todo
-      #user/%user/saved-searches
       $original = $tokens['search-api-saved-searches-url'];
       $replacements[$original] = '';
+      try {
+        $params = [
+          'user' => $user->id(),
+        ];
+        $url = Url::fromRoute('view.saved_searches.page', $params, $url_options);
+        $replacements[$original] = $url;
+      }
+      catch (\Exception $e) {
+        // This will happen when the user deleted the view, or when Views isn't
+        // installed – none of which is an error.
+      }
     }
   }
 
@@ -157,9 +166,7 @@ function search_api_saved_searches_tokens($type, $tokens, array $data, array $op
         }
       }
       catch (\Exception $e) {
-        $variables = Error::decodeException($e);
-        \Drupal::logger('search_api_saved_searches')
-          ->error('%type while generating replacement tokens: @message in %function (line %line of %file).', $variables);
+        watchdog_exception('search_api_saved_searches', $e, '%type while generating replacement tokens: @message in %function (line %line of %file).');
       }
     }
 
@@ -200,9 +207,7 @@ function search_api_saved_searches_tokens($type, $tokens, array $data, array $op
               $links[] = "- $label";
             }
             catch (SearchApiException $e) {
-              $variables = Error::decodeException($e);
-              \Drupal::logger('search_api_saved_searches')
-                ->error('%type while generating replacement tokens: @message in %function (line %line of %file).', $variables);
+              watchdog_exception('search_api_saved_searches', $e, '%type while generating replacement tokens: @message in %function (line %line of %file).');
             }
           }
           $replacements[$original] = implode("\n", $links);

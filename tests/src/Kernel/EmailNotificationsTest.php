@@ -43,9 +43,10 @@ class EmailNotificationsTest extends KernelTestBase {
   protected function setUp() {
     parent::setUp();
 
+    $this->installConfig(['search_api_saved_searches', 'user']);
     $this->installEntitySchema('user');
     $this->installEntitySchema('entity_test_mulrev_changed');
-    $this->installConfig(['search_api_saved_searches', 'user']);
+    $this->installEntitySchema('search_api_saved_search');
 
     // Insert the anonymous user into the database.
     User::create([
@@ -62,8 +63,30 @@ class EmailNotificationsTest extends KernelTestBase {
    * @covers ::getFieldDefinitions
    */
   public function testFieldDefinitions() {
+    // Make sure the correct definition is returned from the plugin.
     $fields = $this->plugin->getFieldDefinitions();
     $this->assertEquals(['mail'], array_keys($fields));
+    $this->assertEquals('E-mail', $fields['mail']->getLabel());
+    $this->assertFalse($fields['mail']->isBaseField());
+
+    // Make sure the mail can be stored in a saved search correctly.
+    $mail = 'test@example.net';
+    $search = SavedSearch::create([
+      'uid' => 0,
+      'type' => 'default',
+      'label' => 'Test search',
+      'mail' => $mail,
+    ]);
+    $search->save();
+
+    $search = SavedSearch::load($search->id());
+    $this->assertEquals($mail, $search->get('mail')->value);
+
+    // Make sure the saved search bundle field definitions include the mail.
+    $fields = \Drupal::getContainer()
+      ->get('entity_field.manager')
+      ->getFieldDefinitions('search_api_saved_search', 'default');
+    $this->assertArrayHasKey('mail', $fields);
     $this->assertEquals('E-mail', $fields['mail']->getLabel());
     $this->assertFalse($fields['mail']->isBaseField());
   }
@@ -93,7 +116,6 @@ Your saved search "[search-api-saved-search:label]" has [search-api-saved-search
     $search_label = 'Test search';
     $search_mail = 'foo@example.com';
     $search = SavedSearch::create([
-      'id' => 1,
       'uid' => 0,
       'type' => 'default',
       'label' => $search_label,

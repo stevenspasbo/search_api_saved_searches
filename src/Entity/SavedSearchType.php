@@ -2,6 +2,7 @@
 
 namespace Drupal\search_api_saved_searches\Entity;
 
+use Drupal\Component\Plugin\Definition\PluginDefinitionInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
@@ -26,12 +27,16 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     plural = "@count saved search types",
  *   ),
  *   handlers = {
- *     "storage" = "Drupal\search_api_saved_searches\Entity\SavedSearchTypeStorage",
- *     "list_builder" = "Drupal\search_api_saved_searches\SavedSearchTypeListBuilder",
+ *     "storage" =
+ *   "Drupal\search_api_saved_searches\Entity\SavedSearchTypeStorage",
+ *     "list_builder" =
+ *   "Drupal\search_api_saved_searches\SavedSearchTypeListBuilder",
  *     "form" = {
- *       "default" = "Drupal\search_api_saved_searches\Form\SavedSearchTypeForm",
+ *       "default" =
+ *   "Drupal\search_api_saved_searches\Form\SavedSearchTypeForm",
  *       "edit" = "Drupal\search_api_saved_searches\Form\SavedSearchTypeForm",
- *       "delete" = "Drupal\search_api_saved_searches\Form\SavedSearchTypeDeleteConfirmForm",
+ *       "delete" =
+ *   "Drupal\search_api_saved_searches\Form\SavedSearchTypeDeleteConfirmForm",
  *     },
  *   },
  *   admin_permission = "administer search_api_saved_searches",
@@ -49,10 +54,13 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     "options",
  *   },
  *   links = {
- *     "canonical" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
+ *     "canonical" =
+ *   "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
  *     "add-form" = "/admin/config/search/search-api-saved-searches/add-type",
- *     "edit-form" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
- *     "delete-form" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/delete",
+ *     "edit-form" =
+ *   "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
+ *     "delete-form" =
+ *   "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/delete",
  *     "collection" = "/admin/config/search/search-api-saved-searches",
  *   },
  * )
@@ -159,62 +167,135 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
     parent::postSave($storage, $update);
 
     if (!$update && !$this->isSyncing()) {
-      try {
-        EntityFormDisplay::create([
-          'status' => TRUE,
-          'id' => 'search_api_saved_search.default.create',
-          'targetEntityType' => 'search_api_saved_search',
-          'bundle' => 'default',
-          'mode' => 'create',
-          'content' => [
-            'label' => [
-              'type' => 'string_textfield',
-              'weight' => 0,
-              'region' => 'content',
-              'settings' => [
-                'size' => 60,
-                'placeholder' => '',
-              ],
-              'third_party_settings' => [],
-            ],
-            'mail' => [
-              'type' => 'email_default',
-              'weight' => 2,
-              'region' => 'content',
-              'settings' => [
-                'size' => 60,
-                'placeholder' => 'user@example.com',
-              ],
-              'third_party_settings' => [],
-            ],
-            'notify_interval' => [
-              'type' => 'number',
-              'weight' => 1,
-              'region' => 'content',
-              'settings' => [
-                'placeholder' => '',
-              ],
-              'third_party_settings' => [],
-            ],
-          ],
-          'hidden' => [
-            'created' => TRUE,
-            'langcode' => TRUE,
-            'last_executed' => TRUE,
-            'next_execution' => TRUE,
-            'uid' => TRUE,
-          ],
-        ])->save();
-      }
-      catch (EntityStorageException $e) {
-        $vars = ['%label' => $this->label()];
-        watchdog_exception('search_api_saved_searches', $e, '%type while trying to configure the "Create" form display for the new saved search type %label: @message in %function (line %line of %file).', $vars);
-      }
+      $this->createFormDisplay();
     }
+
+    // If notification plugins changed, we might have new field definitions (or
+    // removed old ones).
+    $original = $update ? $this->original : static::create(['id' => $this->id()]);
+    $this->adaptFieldStorageDefinitions($original, $this);
 
     // @todo When changing the "date_field" for one or more indexes from/to the
     //   "Determine by result ID" option, we need to prime/delete the results
-    //   data for all affected saved searches.
+    //   data for all affected saved searches. (Needs index ID in searches.)
+  }
+
+  /**
+   * Creates a "create" form display for a new saved search bundle.
+   */
+  protected function createFormDisplay() {
+    try {
+      EntityFormDisplay::create([
+        'status' => TRUE,
+        'id' => "search_api_saved_search.{$this->id()}.create",
+        'targetEntityType' => 'search_api_saved_search',
+        'bundle' => $this->id(),
+        'mode' => 'create',
+        'content' => [
+          'label' => [
+            'type' => 'string_textfield',
+            'weight' => 0,
+            'region' => 'content',
+            'settings' => [
+              'size' => 60,
+              'placeholder' => '',
+            ],
+            'third_party_settings' => [],
+          ],
+          'mail' => [
+            'type' => 'email_default',
+            'weight' => 2,
+            'region' => 'content',
+            'settings' => [
+              'size' => 60,
+              'placeholder' => 'user@example.com',
+            ],
+            'third_party_settings' => [],
+          ],
+          'notify_interval' => [
+            'type' => 'number',
+            'weight' => 1,
+            'region' => 'content',
+            'settings' => [
+              'placeholder' => '',
+            ],
+            'third_party_settings' => [],
+          ],
+        ],
+        'hidden' => [
+          'created' => TRUE,
+          'langcode' => TRUE,
+          'last_executed' => TRUE,
+          'next_execution' => TRUE,
+          'uid' => TRUE,
+        ],
+      ])->save();
+    }
+    catch (EntityStorageException $e) {
+      $vars = ['%label' => $this->label()];
+      watchdog_exception('search_api_saved_searches', $e, '%type while trying to configure the "Create" form display for the new saved search type %label: @message in %function (line %line of %file).', $vars);
+    }
+  }
+
+  /**
+   * Adapts field storage definitions to a changes in a type.
+   *
+   * @param \Drupal\search_api_saved_searches\SavedSearchTypeInterface $old
+   *   The old version of the search type.
+   * @param \Drupal\search_api_saved_searches\SavedSearchTypeInterface $new
+   *   The new version of the search type.
+   */
+  protected static function adaptFieldStorageDefinitions(SavedSearchTypeInterface $old, SavedSearchTypeInterface $new) {
+    if ($new->get('notification_settings') == $old->get('notification_settings')) {
+      return;
+    }
+
+    // Clear the cache.
+    \Drupal::getContainer()->get('entity_field.manager')
+      ->clearCachedFieldDefinitions();
+
+    // Determine changes in the fields defined for this type/bundle.
+    $old_fields = $old->getNotificationPluginFieldDefinitions();
+    $new_fields = $new->getNotificationPluginFieldDefinitions();
+
+    // Collect all fields that exist for the entity type regardless of this
+    // type/bundle (because they are (also) defined by other bundles).
+    $fields_from_other_types = [];
+    /** @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface $type */
+    foreach (static::loadMultiple() as $type) {
+      if ($type->id() != $old->id()) {
+        $fields_from_other_types += $type->getNotificationPluginFieldDefinitions();
+      }
+    }
+
+    // Compute the effective changes in field storage definitions.
+    $created = array_diff_key($new_fields, $old_fields);
+    $created = array_diff_key($created, $fields_from_other_types);
+    $deleted = array_diff_key($old_fields, $new_fields);
+    $deleted = array_diff_key($deleted, $fields_from_other_types);
+
+    // Notify the field storage definition listener of all changes.
+    $listener = \Drupal::getContainer()
+      ->get('field_storage_definition.listener');
+    foreach ($created as $field) {
+      $listener->onFieldStorageDefinitionCreate($field);
+    }
+    foreach ($deleted as $field) {
+      $listener->onFieldStorageDefinitionDelete($field);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+
+    /** @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface $type */
+    foreach ($entities as $type) {
+      $new = static::create(['id' => $type->id()]);
+      static::adaptFieldStorageDefinitions($type, $new);
+    }
   }
 
   /**
@@ -293,6 +374,39 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
   public function setNotificationPlugins(array $notification_plugins = NULL) {
     $this->notificationPluginInstances = $notification_plugins;
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getNotificationPluginFieldDefinitions() {
+    $fields = [];
+
+    // Collect field definitions from our plugins.
+    foreach ($this->getNotificationPlugins() as $plugin) {
+      $plugin_fields = $plugin->getFieldDefinitions();
+
+      // Determine the plugin's provider.
+      $definition = $plugin->getPluginDefinition();
+      $provider = NULL;
+      if ($definition instanceof PluginDefinitionInterface) {
+        $provider = $definition->getProvider();
+      }
+      elseif (is_array($definition)) {
+        $provider = $definition['provider'];
+      }
+
+      // Set some common settings on the field definitions.
+      foreach ($plugin_fields as $field_name => $field) {
+        $field->setName($field_name);
+        $field->setTargetEntityTypeId('search_api_saved_search');
+        $field->setProvider($provider);
+      }
+
+      $fields += $plugin_fields;
+    }
+
+    return $fields;
   }
 
   /**
