@@ -50,7 +50,7 @@ use Drupal\user\UserInterface;
  *   field_ui_base_route = "entity.search_api_saved_search_type.edit_form",
  *   permission_granularity = "bundle",
  *   links = {
- *     "canonical" = "/user/{user}/saved-searches/{search_api_saved_search}/edit",
+ *     "canonical" = "/saved-search/{search_api_saved_search}",
  *     "edit-form" = "/user/{user}/saved-searches/{search_api_saved_search}/edit",
  *     "delete-form" = "/user/{user}/saved-searches/{search_api_saved_search}/delete",
  *   },
@@ -59,22 +59,11 @@ use Drupal\user\UserInterface;
 class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
 
   /**
-   * The search type for this saved search, or FALSE if loading it failed.
+   * Static cache for property getters that take some computation.
    *
-   * @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface|false|null
-   *
-   * @see \Drupal\search_api_saved_searches\Entity\SavedSearch::getType()
+   * @var array
    */
-  protected $type;
-
-  /**
-   * The search query for this saved search, or FALSE if loading it failed.
-   *
-   * @var \Drupal\search_api\Query\QueryInterface|false|null
-   *
-   * @see \Drupal\search_api_saved_searches\Entity\SavedSearch::getQuery()
-   */
-  protected $query;
+  protected $cachedProperties = [];
 
   /**
    * {@inheritdoc}
@@ -155,7 +144,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ->setDisplayOptions('form', [
         'type' => 'datetime_timestamp',
         'weight' => 10,
-      ]);
+      ])
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['notify_interval'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Notification interval'))
@@ -300,7 +290,11 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
    */
   protected function urlRouteParameters($rel) {
     $params = parent::urlRouteParameters($rel);
-    $params['user'] = $this->getOwnerId();
+
+    if ($rel !== 'canonical') {
+      $params['user'] = $this->getOwnerId();
+    }
+
     return $params;
   }
 
@@ -338,32 +332,47 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
    * {@inheritdoc}
    */
   public function getType() {
-    if ($this->type === NULL) {
+    if (!isset($this->cachedProperties[__FUNCTION__])) {
       $type = \Drupal::entityTypeManager()
         ->getStorage('search_api_saved_search_type')
         ->load($this->bundle());
-      $this->type = $type ?: FALSE;
+      $this->cachedProperties[__FUNCTION__] = $type ?: FALSE;
     }
 
-    if (!$this->type) {
+    if (!$this->cachedProperties[__FUNCTION__]) {
       throw new SavedSearchesException("Saved search #{$this->id()} does not have a valid type set");
     }
-    return $this->type;
+    return $this->cachedProperties[__FUNCTION__];
   }
 
   /**
    * {@inheritdoc}
    */
   public function getQuery() {
-    if ($this->query === NULL) {
-      $this->query = FALSE;
+    if (!isset($this->cachedProperties[__FUNCTION__])) {
+      $this->cachedProperties[__FUNCTION__] = FALSE;
       $query = $this->get('query')->value;
       if ($query) {
-        $this->query = unserialize($query);
+        $this->cachedProperties[__FUNCTION__] = unserialize($query);
       }
     }
 
-    return $this->query ?: NULL;
+    return $this->cachedProperties[__FUNCTION__] ?: NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOptions() {
+    if (!isset($this->cachedProperties[__FUNCTION__])) {
+      $this->cachedProperties[__FUNCTION__] = FALSE;
+      $options = $this->get('options')->value;
+      if ($options) {
+        $this->cachedProperties[__FUNCTION__] = unserialize($options);
+      }
+    }
+
+    return $this->cachedProperties[__FUNCTION__] ?: NULL;
   }
 
 }

@@ -87,6 +87,8 @@ class NewResultsCheck {
    *   for all enabled types that have at least one notification plugin set.
    *
    * @return int
+   *   The number of saved searches that were successfully checked for new
+   *   results.
    */
   public function checkAll($type_id = NULL) {
     $search_ids = $this->getSearchesToCheck($type_id);
@@ -103,6 +105,7 @@ class NewResultsCheck {
         $results = $this->getNewResults($search);
         $search->set('last_executed', $now);
         $search->save();
+        ++$count;
         if (!$results) {
           continue;
         }
@@ -135,6 +138,8 @@ class NewResultsCheck {
     $now = $this->time->getRequestTime();
 
     $query = $this->getSearchStorage()->getQuery();
+    // Add a small amount to the current time, so small differences in execution
+    // time don't result in a delay until the next cron run.
     $query->condition('next_execution', $now + 15, '<=');
     if ($type_id !== NULL) {
       $query->condition('type', $type_id);

@@ -25,9 +25,18 @@ interface SavedSearchInterface extends ContentEntityInterface, EntityOwnerInterf
    * Retrieves the search query of this saved search.
    *
    * @return \Drupal\search_api\Query\QueryInterface|null
-   *   The search query of this saved search. Or NULL if it couldn't be
+   *   The search query of this saved search, or NULL if it couldn't be
    *   retrieved.
    */
   public function getQuery();
+
+  /**
+   * Retrieves the options set for this saved search.
+   *
+   * @return array|null
+   *   The options set for this saved search, or NULL if they couldn't be
+   *   retrieved.
+   */
+  public function getOptions();
 
 }

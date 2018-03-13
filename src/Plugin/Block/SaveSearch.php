@@ -3,7 +3,6 @@
 namespace Drupal\search_api_saved_searches\Plugin\Block;
 
 use Drupal\Component\Utility\Xss;
-use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
@@ -12,6 +11,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\search_api\Utility\QueryHelperInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Displays the "Save search" form in a block.
@@ -46,6 +46,13 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
   protected $queryHelper;
 
   /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack|null
+   */
+  protected $requestStack;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -55,6 +62,7 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     $block->setEntityTypeManager($container->get('entity_type.manager'));
     $block->setFormBuilder($container->get('form_builder'));
     $block->setQueryHelper($container->get('search_api.query_helper'));
+    $block->setRequestStack($container->get('request_stack'));
 
     return $block;
   }
@@ -129,6 +137,29 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
   }
 
   /**
+   * Retrieves the request stack.
+   *
+   * @return \Symfony\Component\HttpFoundation\RequestStack
+   *   The request stack.
+   */
+  public function getRequestStack() {
+    return $this->requestStack ?: \Drupal::service('request_stack');
+  }
+
+  /**
+   * Sets the request stack.
+   *
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The new request stack.
+   *
+   * @return $this
+   */
+  public function setRequestStack(RequestStack $request_stack) {
+    $this->requestStack = $request_stack;
+    return $this;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
@@ -151,9 +182,9 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     $form['type'] = [
       '#type' => 'select',
       '#title' => $this->t('Saved search type'),
-      '#description' => $this->t('Saved search type'),
+      '#description' => $this->t('The type/bundle of saved searches that should be created by this block.'),
       '#options' => $type_options,
-      '#default_value' => $this->configuration['type'],
+      '#default_value' => $this->configuration['type'] ?: key($type_options),
       '#required' => TRUE,
     ];
 
@@ -175,7 +206,7 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
 
     $create_access = $this->getEntityTypeManager()
       ->getAccessControlHandler('search_api_saved_search')
-      ->createAccess($this->getDerivativeId(), $account, [], TRUE);
+      ->createAccess($this->configuration['type'], $account, [], TRUE);
     $access->andIf($create_access);
 
     return $return_as_object ? $access : $access->isAllowed();
@@ -203,9 +234,21 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
       $build['description']['#markup'] = Xss::filterAdmin($description);
     }
 
+    // Remember the page on which the search was created.
+    $path = \Drupal::request()->getRequestUri();
+    $base_path = rtrim(base_path(), '/');
+    $base_path_length = strlen($base_path);
+    if ($base_path && substr($path, 0, $base_path_length) === $base_path) {
+      $path = substr($path, $base_path_length);
+    }
+    $options = [
+      'page' => $path,
+    ];
+
     $values = [
       'type' => $type->id(),
       'query' => serialize($query),
+      'options' => serialize($options),
     ];
     $saved_search = $this->getEntityTypeManager()
       ->getStorage('search_api_saved_search')

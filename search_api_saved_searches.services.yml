@@ -9,4 +9,4 @@ services:
 
   search_api_saved_searches.new_results_check:
     class: Drupal\search_api_saved_searches\NewResultsCheck
-    arguments: []
+    arguments: ['@entity_type.manager', '@config.factory', '@datetime.time', '@logger.channel.search_api_saved_searches']

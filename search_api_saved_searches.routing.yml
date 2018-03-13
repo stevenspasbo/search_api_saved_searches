@@ -1,9 +1,9 @@
 entity.search_api_saved_search.canonical:
-  path: '/user/{user}/saved-searches/{search_api_saved_search}/edit'
+  path: '/saved-search/{search_api_saved_search}'
   defaults:
-    _entity_form: 'search_api_saved_search.edit'
+    _controller: '\Drupal\search_api_saved_searches\Controller\SavedSearchController::viewSearch'
   requirements:
-    _entity_access: 'search_api_saved_search.edit'
+    _entity_access: 'search_api_saved_search.view'
 
 entity.search_api_saved_search.edit_form:
   path: '/user/{user}/saved-searches/{search_api_saved_search}/edit'
