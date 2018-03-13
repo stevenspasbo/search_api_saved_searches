@@ -224,7 +224,7 @@ If you didn't create this saved search, just ignore this mail and the saved sear
 
     $types = ['site', 'user', 'search-api-saved-search'];
     $available_tokens = $this->getAvailableTokensList($types);
-    $form['notification']['available_tokens'] = $available_tokens;
+    $form['activate']['available_tokens'] = $available_tokens;
 
     $form['notification'] = [
       '#type' => 'details',
@@ -261,7 +261,8 @@ There are new results for your saved search "@search_label":
       '#required' => TRUE,
     ];
 
-    $available_tokens[] = 'search_api_results';
+    $types[] = 'search-api-saved-search-results';
+    $available_tokens = $this->getAvailableTokensList($types);
     $form['notification']['available_tokens'] = $available_tokens;
 
     return $form;
@@ -354,10 +355,9 @@ There are new results for your saved search "@search_label":
   }
 
   /**
-   *
    * Prepares a message containing new saved search results.
    *
-   * @param array $message
+   * @param array|\ArrayAccess $message
    *   An array to be filled in. Elements in this array include:
    *   - id: An ID to identify the mail sent. Look at module source code or
    *     MailManagerInterface->mail() for possible id values.
@@ -378,10 +378,9 @@ There are new results for your saved search "@search_label":
    *   - headers: Associative array containing mail headers, such as From,
    *     Sender, MIME-Version, Content-Type, etc.
    *     MailManagerInterface->mail() pre-fills several headers in this array.
-   * @param array $params
+   * @param array|\ArrayAccess $params
    *   An associative array with the following keys:
-   *   - search: The saved search entity for which results are
-   *     being reported.
+   *   - search: The saved search entity for which results are being reported.
    *   - results: A Search API result set containing the new results.
    *
    * @see hook_mail()
@@ -409,6 +408,37 @@ There are new results for your saved search "@search_label":
     $message['body'][] = $body;
   }
 
+  /**
+   * Prepares a message for activating a new saved search.
+   *
+   * @param array|\ArrayAccess $message
+   *   An array to be filled in. Elements in this array include:
+   *   - id: An ID to identify the mail sent. Look at module source code or
+   *     MailManagerInterface->mail() for possible id values.
+   *   - to: The address or addresses the message will be sent to. The
+   *     formatting of this string must comply with RFC 2822.
+   *   - subject: Subject of the email to be sent. This must not contain any
+   *     newline characters, or the mail may not be sent properly.
+   *     MailManagerInterface->mail() sets this to an empty string when the hook
+   *     is invoked.
+   *   - body: An array of lines containing the message to be sent. Drupal will
+   *     format the correct line endings for you. MailManagerInterface->mail()
+   *     sets this to an empty array when the hook is invoked. The array may
+   *     contain either strings or objects implementing
+   *     \Drupal\Component\Render\MarkupInterface.
+   *   - from: The address the message will be marked as being from, which is
+   *     set by MailManagerInterface->mail() to either a custom address or the
+   *     site-wide default email address when the hook is invoked.
+   *   - headers: Associative array containing mail headers, such as From,
+   *     Sender, MIME-Version, Content-Type, etc.
+   *     MailManagerInterface->mail() pre-fills several headers in this array.
+   * @param array|\ArrayAccess $params
+   *   An associative array with the following keys:
+   *   - search: The saved search entity which can be activated.
+   *
+   * @see hook_mail()
+   * @see search_api_saved_searches_mail()
+   */
   public function getActivationMail(&$message, $params) {
     // @todo
     // Remember "[activation_link]" pseudo-token replacement.
