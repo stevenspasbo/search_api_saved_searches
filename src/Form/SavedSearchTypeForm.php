@@ -271,6 +271,13 @@ class SavedSearchTypeForm extends EntityForm {
       '#title' => $this->t('Miscellaneous'),
       '#open' => $type->isNew(),
     ];
+    $form['misc']['allow_keys_change'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Allow changing of keywords'),
+      '#description' => $this->t('Enable to allow users to change the search keywords for existing saved searches.'),
+      '#default_value' => $type->getOption('allow_keys_change', FALSE),
+      '#parents' => ['options', 'allow_keys_change'],
+    ];
     $form['misc']['date_field'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Method for determining new results'),

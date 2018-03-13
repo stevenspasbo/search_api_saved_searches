@@ -42,3 +42,6 @@ search_api_saved_searches.type.*:
         description:
           type: string
           label: 'User interface description'
+        allow_keys_change:
+          type: boolean
+          label: 'Whether to allow editing of search keywords for existing saved searches'
