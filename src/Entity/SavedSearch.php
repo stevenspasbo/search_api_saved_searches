@@ -282,6 +282,22 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   /**
    * {@inheritdoc}
    */
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+
+    // Remove any "known results" we have for the deleted searches.
+    // NB: $entities is not documented to be keyed by entity ID, but since Core
+    // relies on it (see \Drupal\comment\Entity\Comment::postDelete()), we
+    // should be able to do the same.
+    \Drupal::database()
+      ->delete('search_api_saved_searches_old_results')
+      ->condition('search_id', array_keys($entities), 'IN')
+      ->execute();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function urlRouteParameters($rel) {
     $params = parent::urlRouteParameters($rel);
     $params['user'] = $this->getOwnerId();
