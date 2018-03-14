@@ -213,12 +213,10 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
             'third_party_settings' => [],
           ],
           'notify_interval' => [
-            'type' => 'number',
+            'type' => 'options_select',
             'weight' => 1,
             'region' => 'content',
-            'settings' => [
-              'placeholder' => '',
-            ],
+            'settings' => [],
             'third_party_settings' => [],
           ],
         ],

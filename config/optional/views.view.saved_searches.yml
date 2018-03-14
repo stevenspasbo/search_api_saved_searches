@@ -269,7 +269,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          label: 'Notification interval (in seconds)'
+          label: 'Notification interval'
           exclude: false
           alter:
             alter_text: false

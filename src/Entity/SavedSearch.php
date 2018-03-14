@@ -148,24 +148,23 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['notify_interval'] = BaseFieldDefinition::create('integer')
+    $fields['notify_interval'] = BaseFieldDefinition::create('list_integer')
       ->setLabel(t('Notification interval'))
-      ->setDescription(t('The interval (in seconds) in which you want to receive notifications of new results for this saved search. Use -1 for "Never".'))
-      ->addPropertyConstraints('value', [
-        'Range' => [
-          'min' => -1,
-          'minMessage' => t('%name: The integer must be larger or equal to %min.', [
-            '%name' => t('Notification interval'),
-            '%min' => -1,
-          ]),
-        ],
+      ->setDescription(t('The interval in which you want to receive notifications of new results for this saved search.'))
+      ->setRequired(TRUE)
+      ->setSetting('allowed_values', [
+        3600 => t('Hourly'),
+        86400 => t('Daily'),
+        604800 => t('Weekly'),
+        -1 => t('Never'),
       ])
+      ->setDefaultValue(-1)
       ->setDisplayOptions('view', [
-        'type' => 'number_integer',
+        'type' => 'list_default',
         'weight' => 0,
       ])
       ->setDisplayOptions('form', [
-        'type' => 'number',
+        'type' => 'options_select',
         'weight' => 0,
       ])
       ->setDisplayConfigurable('form', TRUE);
