@@ -347,6 +347,24 @@ There are new results for your saved search "@search_label":
   /**
    * {@inheritdoc}
    */
+  public function getDefaultFieldFormDisplay() {
+    return [
+      'mail' => [
+        'type' => 'email_default',
+        'weight' => 2,
+        'region' => 'content',
+        'settings' => [
+          'size' => 60,
+          'placeholder' => 'user@example.com',
+        ],
+        'third_party_settings' => [],
+      ],
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
     // Make sure this is really our e-mail field.
     if ($field_definition->getName() !== 'mail') {

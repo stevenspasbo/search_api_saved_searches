@@ -81,6 +81,13 @@ abstract class NotificationPluginBase extends ConfigurablePluginBase implements 
   /**
    * {@inheritdoc}
    */
+  public function getDefaultFieldFormDisplay() {
+    return [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
     return AccessResult::allowed();
   }

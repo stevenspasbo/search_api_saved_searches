@@ -182,7 +182,7 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
    */
   protected function createFormDisplay() {
     try {
-      EntityFormDisplay::create([
+      $values = [
         'status' => TRUE,
         'id' => "search_api_saved_search.{$this->id()}.create",
         'targetEntityType' => 'search_api_saved_search',
@@ -196,16 +196,6 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
             'settings' => [
               'size' => 60,
               'placeholder' => '',
-            ],
-            'third_party_settings' => [],
-          ],
-          'mail' => [
-            'type' => 'email_default',
-            'weight' => 2,
-            'region' => 'content',
-            'settings' => [
-              'size' => 60,
-              'placeholder' => 'user@example.com',
             ],
             'third_party_settings' => [],
           ],
@@ -224,7 +214,11 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
           'next_execution' => TRUE,
           'uid' => TRUE,
         ],
-      ])->save();
+      ];
+      foreach ($this->getNotificationPlugins() as $plugin) {
+        $values['content'] += $plugin->getDefaultFieldFormDisplay();
+      }
+      EntityFormDisplay::create($values)->save();
     }
     catch (EntityStorageException $e) {
       $vars = ['%label' => $this->label()];

@@ -54,6 +54,16 @@ interface NotificationPluginInterface extends ConfigurablePluginInterface {
   public function getFieldDefinitions();
 
   /**
+   * Retrieves default form display settings for the plugin's custom fields.
+   *
+   * @return array
+   *   An associative array of form display settings, keyed by field names
+   *   defined by this plugin. Fields can easily be hidden by default by just
+   *   omitting them from this array.
+   */
+  public function getDefaultFieldFormDisplay();
+
+  /**
    * Checks access to an operation on a given entity field.
    *
    * This method will only be called for fields defined by this plugin and can
