@@ -54,13 +54,10 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     "options",
  *   },
  *   links = {
- *     "canonical" =
- *   "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
+ *     "canonical" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
  *     "add-form" = "/admin/config/search/search-api-saved-searches/add-type",
- *     "edit-form" =
- *   "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
- *     "delete-form" =
- *   "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/delete",
+ *     "edit-form" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit",
+ *     "delete-form" = "/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/delete",
  *     "collection" = "/admin/config/search/search-api-saved-searches",
  *   },
  * )

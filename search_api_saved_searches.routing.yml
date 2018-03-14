@@ -34,13 +34,6 @@ entity.search_api_saved_search_type.add_form:
   requirements:
     _entity_create_access: 'search_api_saved_search_type'
 
-entity.search_api_saved_search_type.canonical:
-  path: '/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit'
-  defaults:
-    _entity_form: 'search_api_saved_search_type.edit'
-  requirements:
-    _entity_access: 'search_api_saved_search_type.edit'
-
 entity.search_api_saved_search_type.edit_form:
   path: '/admin/config/search/search-api-saved-searches/type/{search_api_saved_search_type}/edit'
   defaults:
