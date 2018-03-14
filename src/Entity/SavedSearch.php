@@ -226,6 +226,25 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   /**
    * {@inheritdoc}
    */
+  public function postCreate(EntityStorageInterface $storage) {
+    parent::postCreate($storage);
+
+    // Set a default label for new saved searches. (Can't use a "default value
+    // callback" for the label field because the query only gets set afterwards,
+    // based on the order of field definitions.)
+    if (empty($this->get('label')->value)) {
+      $label = NULL;
+      $query = $this->getQuery();
+      if ($query && is_string($query->getOriginalKeys())) {
+        $label = $query->getOriginalKeys();
+      }
+      $this->set('label', $label ?: t('Saved search'));
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
 
