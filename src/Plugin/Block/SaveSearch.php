@@ -4,6 +4,7 @@ namespace Drupal\search_api_saved_searches\Plugin\Block;
 
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Block\BlockBase;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -216,18 +217,34 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
    * {@inheritdoc}
    */
   public function build() {
+    $build = [];
+    $cacheability = new CacheableMetadata();
+
     // @todo Move those checks to access()? Would mean access results can't be
     //   cached, though.
     $type = $this->getSavedSearchType();
-    if (!$type || !$type->status()) {
-      return [];
+    if (!$type) {
+      $tags = $this->getEntityTypeManager()
+        ->getDefinition('search_api_saved_search_type')
+        ->getListCacheTags();
+      $cacheability->addCacheTags($tags);
+      $cacheability->applyTo($build);
+      return $build;
     }
-    $query = $type->getActiveQuery($this->getQueryHelper());
-    if (!$query) {
-      return [];
+    $cacheability->addCacheableDependency($type);
+    if (!$type->status()) {
+      $cacheability->applyTo($build);
+      return $build;
     }
 
-    $build = [];
+    // Since there is no cache context for "search query on this page", we can't
+    // cache this block (unless building it didn't get this far).
+    $cacheability->setCacheMaxAge(0);
+    $cacheability->applyTo($build);
+    $query = $type->getActiveQuery($this->getQueryHelper());
+    if (!$query) {
+      return $build;
+    }
 
     $description = $type->getOption('description');
     if ($description) {
