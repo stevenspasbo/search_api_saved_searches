@@ -383,7 +383,7 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
     $fields = [];
 
     // Collect field definitions from our plugins.
-    foreach ($this->getNotificationPlugins() as $plugin) {
+    foreach ($this->getNotificationPlugins() as $plugin_id => $plugin) {
       $plugin_fields = $plugin->getFieldDefinitions();
 
       // Determine the plugin's provider.
@@ -401,6 +401,7 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
         $field->setName($field_name);
         $field->setTargetEntityTypeId('search_api_saved_search');
         $field->setProvider($provider);
+        $field->setSetting('notification_plugin', $plugin_id);
       }
 
       $fields += $plugin_fields;

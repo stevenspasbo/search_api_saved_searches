@@ -2,6 +2,9 @@
 
 namespace Drupal\search_api_saved_searches\Notification;
 
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\search_api\Plugin\ConfigurablePluginInterface;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
@@ -49,6 +52,31 @@ interface NotificationPluginInterface extends ConfigurablePluginInterface {
    *   An array of bundle field definitions, keyed by field name.
    */
   public function getFieldDefinitions();
+
+  /**
+   * Checks access to an operation on a given entity field.
+   *
+   * This method will only be called for fields defined by this plugin and can
+   * be used to implement custom access restrictions for those fields.
+   *
+   * @param string $operation
+   *   The operation access should be checked for.
+   *   Usually one of "view" or "edit".
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The field definition.
+   * @param \Drupal\Core\Session\AccountInterface $account
+   *   The user session for which to check access.
+   * @param \Drupal\Core\Field\FieldItemListInterface $items
+   *   (optional) The field values for which to check access, or NULL if access
+   *   is checked for the field definition, without any specific value
+   *   available.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   *
+   * @see \Drupal\search_api_saved_searches\Entity\SavedSearchAccessControlHandler::checkFieldAccess()
+   */
+  public function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL);
 
   /**
    * Notifies the search's owner of new results.

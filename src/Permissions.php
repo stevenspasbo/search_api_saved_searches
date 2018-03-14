@@ -70,8 +70,8 @@ class Permissions implements ContainerInjectionInterface {
 
     foreach ($this->getStorage()->loadMultiple() as $id => $type) {
       $args = ['%type' => $type->label()];
-      $perms['create ' . $id . ' search_api_saved_searches'] = [
-        'title' => $this->t('Create saved searches of type %type', $args),
+      $perms['use ' . $id . ' search_api_saved_searches'] = [
+        'title' => $this->t('Use saved searches of type %type', $args),
       ];
     }
 

@@ -2,6 +2,10 @@
 
 namespace Drupal\search_api_saved_searches\Notification;
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\search_api\Plugin\ConfigurablePluginBase;
 use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
 
@@ -72,6 +76,13 @@ abstract class NotificationPluginBase extends ConfigurablePluginBase implements 
    */
   public function getFieldDefinitions() {
     return [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+    return AccessResult::allowed();
   }
 
 }

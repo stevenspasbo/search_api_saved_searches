@@ -207,7 +207,7 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     $create_access = $this->getEntityTypeManager()
       ->getAccessControlHandler('search_api_saved_search')
       ->createAccess($this->configuration['type'], $account, [], TRUE);
-    $access->andIf($create_access);
+    $access = $access->andIf($create_access);
 
     return $return_as_object ? $access : $access->isAllowed();
   }

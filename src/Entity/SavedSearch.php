@@ -26,6 +26,7 @@ use Drupal\user\UserInterface;
  *   bundle_label = @Translation("Search type"),
  *   handlers = {
  *     "list_builder" = "Drupal\search_api_saved_searches\SavedSearchListBuilder",
+ *     "access" = "Drupal\search_api_saved_searches\Entity\SavedSearchAccessControlHandler",
  *     "views_data" = "Drupal\search_api_saved_searches\SavedSearchViewsData",
  *     "form" = {
  *       "default" = "Drupal\search_api_saved_searches\Form\SavedSearchForm",

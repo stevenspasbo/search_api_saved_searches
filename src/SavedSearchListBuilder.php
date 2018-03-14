@@ -5,7 +5,7 @@ namespace Drupal\search_api_saved_searches;
 use Drupal\Core\Entity\EntityListBuilder;
 
 /**
- * @todo
+ * @todo Use or remove.
  */
 class SavedSearchListBuilder extends EntityListBuilder {
 

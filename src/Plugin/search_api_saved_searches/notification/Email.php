@@ -3,14 +3,19 @@
 namespace Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\search_api\Plugin\PluginFormTrait;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api_saved_searches\BundleFieldDefinition;
+use Drupal\search_api_saved_searches\Entity\SavedSearchAccessControlHandler;
 use Drupal\search_api_saved_searches\Notification\NotificationPluginBase;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -163,7 +168,6 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    // @todo Is this the right place for this option?
     $form['registered_choose_mail'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Let logged-in users also enter a different mail address'),
@@ -315,6 +319,7 @@ There are new results for your saved search "@search_label":
       ->setLabel(t('E-mail'))
       ->setDescription(t('The email address to which notifications should be sent.'))
       ->setDefaultValueCallback(static::class . '::getDefaultMail')
+      ->setRequired(TRUE)
       ->setDisplayOptions('view', [
         'type' => 'timestamp',
         'weight' => 0,
@@ -337,6 +342,25 @@ There are new results for your saved search "@search_label":
   public static function getDefaultMail() {
     $mail = \Drupal::currentUser()->getEmail();
     return $mail ? [$mail] : [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+    // Make sure this is really our e-mail field.
+    if ($field_definition->getName() !== 'mail') {
+      return parent::checkFieldAccess($operation, $field_definition, $account, $items);
+    }
+
+    if (!$this->configuration['registered_choose_mail']) {
+      $permission = SavedSearchAccessControlHandler::ADMIN_PERMISSION;
+      return AccessResult::allowedIf($account->isAnonymous())
+        ->addCacheableDependency($account)
+        ->orIf(AccessResult::allowedIfHasPermission($account, $permission));
+    }
+
+    return parent::checkFieldAccess($operation, $field_definition, $account, $items);
   }
 
   /**
