@@ -100,22 +100,33 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
    * {@inheritdoc}
    */
   protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+    $field_name = $field_definition->getName();
+
     // Only admins can edit administrative fields.
     $administrative_fields = [
       'uid',
+      'status',
       'created',
       'last_executed',
       'next_execution',
       'notify_interval',
     ];
-    if ($operation === 'edit' && in_array($field_definition->getName(), $administrative_fields, TRUE)) {
+    if ($operation === 'edit' && in_array($field_name, $administrative_fields, TRUE)) {
       return AccessResult::allowedIfHasPermission($account, self::ADMIN_PERMISSION);
     }
 
     // For serialized fields, neither viewing nor editing makes sense.
     $serialized_fields = ['query', 'options'];
-    if (in_array($field_definition->getName(), $serialized_fields, TRUE)) {
+    if (in_array($field_name, $serialized_fields, TRUE)) {
       return AccessResult::forbidden();
+    }
+
+    // The index ID cannot be edited, but can be viewed by admins.
+    if ($field_name === 'index_id') {
+      if ($operation === 'edit') {
+        return AccessResult::forbidden();
+      }
+      return AccessResult::allowedIfHasPermission($account, self::ADMIN_PERMISSION);
     }
 
     // Allow for access checks on fields defined by notification plugins.

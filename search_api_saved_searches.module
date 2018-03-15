@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\search_api\IndexInterface;
 use Drupal\search_api_saved_searches\Entity\SavedSearch;
 use Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification\Email;
 
@@ -39,6 +40,33 @@ function search_api_saved_searches_entity_field_storage_info(EntityTypeInterface
   }
 
   return $fields;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for type "search_api_index".
+ */
+function search_api_saved_searches_search_api_index_delete(IndexInterface $index) {
+  // Delete all saved searches that used this index.
+  $ids = \Drupal::entityQuery('search_api_saved_search')
+    ->condition('index_id', $index->id())
+    ->execute();
+  if ($ids) {
+    try {
+      $storage = \Drupal::entityTypeManager()
+        ->getStorage('search_api_saved_search');
+      $searches = $storage->loadMultiple($ids);
+      if ($searches) {
+        $storage->delete($searches);
+      }
+    }
+    // @todo Use multi-catch for InvalidPluginDefinitionException and
+    //   EntityStorageException once we depend on PHP 7.1+.
+    catch (\Exception $e) {
+      $args['%index'] = $index->label();
+      $args['@index_id'] = $index->id();
+      watchdog_exception('search_api_saved_searches', $e, '%type while trying to delete saved searches on deleted index %index (@index_id): @message in %function (line %line of %file).', $args);
+    }
+  }
 }
 
 /**

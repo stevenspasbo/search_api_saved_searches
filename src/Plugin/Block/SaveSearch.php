@@ -264,8 +264,9 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
 
     $values = [
       'type' => $type->id(),
-      'query' => serialize($query),
-      'options' => serialize($options),
+      'index_id' => $query->getIndex()->id(),
+      'query' => $query,
+      'options' => $options,
     ];
     $saved_search = $this->getEntityTypeManager()
       ->getStorage('search_api_saved_search')

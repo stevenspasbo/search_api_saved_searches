@@ -138,6 +138,7 @@ class NewResultsCheck {
     $now = $this->time->getRequestTime();
 
     $query = $this->getSearchStorage()->getQuery();
+    $query->condition('status', TRUE);
     // Add a small amount to the current time, so small differences in execution
     // time don't result in a delay until the next cron run.
     $query->condition('next_execution', $now + 15, '<=');

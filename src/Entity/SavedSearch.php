@@ -113,6 +113,24 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
+    $fields['status'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Activated'))
+      ->setDescription(t('Whether the saved search has been activated.'))
+      ->setDefaultValue(TRUE)
+      ->setDisplayOptions('view', [
+        'type' => 'boolean',
+        'weight' => 0,
+        'settings' => [
+          'on_label' => t('Activated'),
+          'off_label' => t('Activation pending'),
+        ],
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'boolean_checkbox',
+        'weight' => 0,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
+
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
       ->setDescription(t('The time that the saved search was created.'))
@@ -173,6 +191,10 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
+    $fields['index_id'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Index ID'))
+      ->setSetting('max_length', 50);
+
     // @todo Is there a better data type? Should we provide one?
     $fields['query'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Search query'))
@@ -229,8 +251,35 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   /**
    * {@inheritdoc}
    */
+  public static function preCreate(EntityStorageInterface $storage, array &$values) {
+    parent::preCreate($storage, $values);
+
+    // Auto-serialize query and options, if necessary.
+    foreach (['query', 'options'] as $key) {
+      if (isset($values[$key]) && !is_scalar($values[$key])) {
+        // Set to the cached property so we don't need to unserialize again in
+        // this page request.
+        $values['cachedProperties'][$key] = $values[$key];
+        $values[$key] = serialize($values[$key]);
+      }
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function postCreate(EntityStorageInterface $storage) {
     parent::postCreate($storage);
+
+    // The "cachedProperties" values set in preCreate() above will end up in
+    // $this->value['cachedProperties'] by default. It's probably easiest to
+    // just let that happen and move the values to the property here.
+    if (isset($this->values['cachedProperties'])) {
+      foreach ($this->values['cachedProperties'] as $key => $value) {
+        $this->cachedProperties[$key] = $value;
+      }
+      unset($this->values['cachedProperties']);
+    }
 
     // Set a default label for new saved searches. (Can't use a "default value
     // callback" for the label field because the query only gets set afterwards,
@@ -251,6 +300,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
 
+    // Update the "next_execution" field, if notifications are enabled.
     $notify_interval = $this->get('notify_interval')->value;
     if ($notify_interval >= 0) {
       $last_executed = $this->get('last_executed')->value;
@@ -258,6 +308,14 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
     }
     else {
       $this->set('next_execution', NULL);
+    }
+
+    // Set the "index_id" field, if necessary.
+    if ($this->isNew() && !$this->get('index_id')->value) {
+      $query = $this->getQuery();
+      if ($query) {
+        $this->set('index_id', $query->getIndex()->id());
+      }
     }
   }
 
@@ -355,47 +413,47 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
    * {@inheritdoc}
    */
   public function getType() {
-    if (!isset($this->cachedProperties[__FUNCTION__])) {
+    if (!isset($this->cachedProperties['type'])) {
       $type = \Drupal::entityTypeManager()
         ->getStorage('search_api_saved_search_type')
         ->load($this->bundle());
-      $this->cachedProperties[__FUNCTION__] = $type ?: FALSE;
+      $this->cachedProperties['type'] = $type ?: FALSE;
     }
 
-    if (!$this->cachedProperties[__FUNCTION__]) {
+    if (!$this->cachedProperties['type']) {
       throw new SavedSearchesException("Saved search #{$this->id()} does not have a valid type set");
     }
-    return $this->cachedProperties[__FUNCTION__];
+    return $this->cachedProperties['type'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function getQuery() {
-    if (!isset($this->cachedProperties[__FUNCTION__])) {
-      $this->cachedProperties[__FUNCTION__] = FALSE;
+    if (!isset($this->cachedProperties['query'])) {
+      $this->cachedProperties['query'] = FALSE;
       $query = $this->get('query')->value;
       if ($query) {
-        $this->cachedProperties[__FUNCTION__] = unserialize($query);
+        $this->cachedProperties['query'] = unserialize($query);
       }
     }
 
-    return $this->cachedProperties[__FUNCTION__] ?: NULL;
+    return $this->cachedProperties['query'] ?: NULL;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getOptions() {
-    if (!isset($this->cachedProperties[__FUNCTION__])) {
-      $this->cachedProperties[__FUNCTION__] = FALSE;
+    if (!isset($this->cachedProperties['options'])) {
+      $this->cachedProperties['options'] = FALSE;
       $options = $this->get('options')->value;
       if ($options) {
-        $this->cachedProperties[__FUNCTION__] = unserialize($options);
+        $this->cachedProperties['options'] = unserialize($options);
       }
     }
 
-    return $this->cachedProperties[__FUNCTION__] ?: NULL;
+    return $this->cachedProperties['options'] ?: NULL;
   }
 
 }
