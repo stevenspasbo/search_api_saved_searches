@@ -415,6 +415,12 @@ class SavedSearchTypeForm extends EntityForm {
     /** @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface $type */
     $type = $this->getEntity();
 
+    // Store the selected displays as a numerically indexed array.
+    $key = ['options', 'displays', 'selected'];
+    $selected = $form_state->getValue($key, []);
+    $selected = array_keys(array_filter($selected));
+    $form_state->setValue($key, $selected);
+
     // Store the array of notification plugin IDs with integer keys.
     $plugin_ids = array_values(array_filter($form_state->getValue('notification_plugins', [])));
     $form_state->setValue('notification_plugins', $plugin_ids);

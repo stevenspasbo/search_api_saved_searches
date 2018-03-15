@@ -13,6 +13,7 @@ search_api_saved_searches.type.*:
     notification_settings:
       type: sequence
       label: 'Notification plugin settings'
+      orderby: key
       sequence:
         type: plugin.plugin_configuration.search_api_saved_searches_notification.[%key]
         label: 'The configuration for a single notification plugin'
@@ -30,12 +31,14 @@ search_api_saved_searches.type.*:
             selected:
               type: sequence
               label: 'The selected displays'
+              orderby: value
               sequence:
                 type: string
                 label: 'A display plugin ID'
         date_field:
           type: sequence
           label: 'Method for determining new results (per index)'
+          orderby: key
           sequence:
             type: string
             label: 'The date field to use for this index (or empty to determine via result IDs)'

@@ -425,9 +425,21 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
       $query_helper = \Drupal::service('search_api.query_helper');
     }
     foreach ($query_helper->getAllResults() as $result) {
-      // @todo There will later be some configuration for picking which queries
-      //   should be matched by a type (based on display/search ID, I guess).
-      return $result->getQuery();
+      // Only match queries with attached search display.
+      $query = $result->getQuery();
+      $display = $query->getDisplayPlugin();
+      if (!$display) {
+        continue;
+      }
+      // Check whether the display matches the ones selected in the options.
+      // @todo Replace with \Drupal\search_api\Utility\Utility::matches() once
+      //   we can use it (Search API 1.8 dependency).
+      $display_id = $display->getPluginId();
+      $selected = $this->getOption('displays.selected', []);
+      $default = $this->getOption('displays.default', TRUE);
+      if (in_array($display_id, $selected) != $default) {
+        return $query;
+      }
     }
     return NULL;
   }
