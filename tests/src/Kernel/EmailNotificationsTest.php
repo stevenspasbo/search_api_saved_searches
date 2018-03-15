@@ -24,6 +24,7 @@ class EmailNotificationsTest extends KernelTestBase {
    */
   protected static $modules = [
     'entity_test',
+    'options',
     'search_api',
     'search_api_saved_searches',
     'system',

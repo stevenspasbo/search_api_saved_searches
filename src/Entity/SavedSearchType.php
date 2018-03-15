@@ -208,6 +208,7 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
           ],
         ],
         'hidden' => [
+          'status' => TRUE,
           'created' => TRUE,
           'langcode' => TRUE,
           'last_executed' => TRUE,
