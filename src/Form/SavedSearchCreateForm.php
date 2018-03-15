@@ -13,10 +13,49 @@ class SavedSearchCreateForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
+  public function form(array $form, FormStateInterface $form_state) {
+    $form = parent::form($form, $form_state);
+
+    $form['#prefix'] = '<div id="search-api-saved-searches-save-form-wrapper">';
+    $form['#suffix'] = '</div>';
+
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
+
+    // Change label.
     $actions['submit']['#value'] = $this->t('Save search');
+
+    // Add AJAX handling.
+    $actions['submit']['#ajax'] = [
+      'callback' => '::saveFormAjax',
+      'wrapper' => 'search-api-saved-searches-save-form-wrapper',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ];
+    $actions['submit']['#executes_submit_callback'] = TRUE;
+
     return $actions;
+  }
+
+  /**
+   * Handles an AJAX submit of the form.
+   *
+   * @param array $form
+   *   The current form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current form state.
+   *
+   * @return array
+   *   The part of the form to return as AJAX.
+   */
+  public function saveFormAjax(array $form, FormStateInterface $form_state) {
+    return $form_state->getErrors() ? $form : ['#type' => 'status_messages'];
   }
 
   /**
