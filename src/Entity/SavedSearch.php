@@ -6,6 +6,7 @@ use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api_saved_searches\SavedSearchesException;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Drupal\user\UserInterface;
@@ -257,6 +258,25 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
     // Auto-serialize query and options, if necessary.
     foreach (['query', 'options'] as $key) {
       if (isset($values[$key]) && !is_scalar($values[$key])) {
+        // Search queries created via Views will have a
+        // \Drupal\views\ViewExecutable object in the "search_api_view" option
+        // as possibly useful metadata for alter hooks, etc. The big problem
+        // with that is that those objects will automatically re-execute the
+        // view when they are unserialized, which is a huge, completely
+        // unnecessary overhead in our case (which might furthermore confuse
+        // modules reacting to searches, like Facets – or this one). It's hard
+        // to tell what a "proper" solution for this problem would look like,
+        // but probably just unsetting this option in the query we save will
+        // work well enough in almost all cases.
+        if ($key === 'query' && $values[$key] instanceof QueryInterface) {
+          // Clone the query to not mess with the original.
+          /** @var \Drupal\search_api\Query\QueryInterface $query */
+          $query = clone $values[$key];
+          $options = &$query->getOptions();
+          unset($options['search_api_view']);
+          $values[$key] = $query;
+        }
+
         // Set to the cached property so we don't need to unserialize again in
         // this page request.
         $values['cachedProperties'][$key] = $values[$key];
