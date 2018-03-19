@@ -2,10 +2,12 @@
 
 namespace Drupal\search_api_saved_searches\Entity;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Site\Settings;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api_saved_searches\SavedSearchesException;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
@@ -53,6 +55,7 @@ use Drupal\user\UserInterface;
  *   permission_granularity = "bundle",
  *   links = {
  *     "canonical" = "/saved-search/{search_api_saved_search}",
+ *     "activate" = "/saved-search/{search_api_saved_search}/activate/{token}",
  *     "edit-form" = "/user/{user}/saved-searches/{search_api_saved_search}/edit",
  *     "delete-form" = "/user/{user}/saved-searches/{search_api_saved_search}/delete",
  *   },
@@ -392,7 +395,10 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   protected function urlRouteParameters($rel) {
     $params = parent::urlRouteParameters($rel);
 
-    if ($rel !== 'canonical') {
+    if ($rel === 'activate') {
+      $params['token'] = $this->getAccessToken();
+    }
+    elseif ($rel !== 'canonical') {
       $params['user'] = $this->getOwnerId();
     }
 
@@ -474,6 +480,14 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
     }
 
     return $this->cachedProperties['options'] ?: NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getAccessToken() {
+    $key = $this->getEntityTypeId() . ':' . $this->id();
+    return Crypt::hmacBase64($key, Settings::getHashSalt());
   }
 
 }

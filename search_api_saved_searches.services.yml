@@ -7,6 +7,10 @@ services:
     class: Drupal\search_api_saved_searches\Notification\NotificationPluginManager
     parent: default_plugin_manager
 
+  search_api_saved_searches.email_queue:
+    class: Drupal\search_api_saved_searches\Service\EmailQueue
+    arguments: ['@plugin.manager.mail']
+
   search_api_saved_searches.new_results_check:
-    class: Drupal\search_api_saved_searches\NewResultsCheck
+    class: Drupal\search_api_saved_searches\Service\NewResultsCheck
     arguments: ['@entity_type.manager', '@config.factory', '@datetime.time', '@logger.channel.search_api_saved_searches']

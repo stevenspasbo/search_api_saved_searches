@@ -5,6 +5,13 @@ entity.search_api_saved_search.canonical:
   requirements:
     _entity_access: 'search_api_saved_search.view'
 
+entity.search_api_saved_search.activate:
+  path: '/saved-search/{search_api_saved_search}/activate/{token}'
+  defaults:
+    _controller: '\Drupal\search_api_saved_searches\Controller\SavedSearchController::activateSearch'
+  requirements:
+    _entity_access: 'search_api_saved_search.edit'
+
 entity.search_api_saved_search.edit_form:
   path: '/user/{user}/saved-searches/{search_api_saved_search}/edit'
   defaults:

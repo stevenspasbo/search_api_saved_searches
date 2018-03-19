@@ -54,6 +54,11 @@ function search_api_saved_searches_token_info() {
     'description' => t('The URL of the page displaying this search, if any.'),
     'type' => 'url',
   ];
+  $tokens['search-api-saved-search']['activate-url'] = [
+    'name' => t('Activate URL'),
+    'description' => t('The URL where the saved search can be activated (if necessary).'),
+    'type' => 'url',
+  ];
   $tokens['search-api-saved-search']['edit-url'] = [
     'name' => t('Edit URL'),
     'description' => t('The URL for editing the saved search.'),
@@ -151,6 +156,11 @@ function search_api_saved_searches_tokens($type, $tokens, array $data, array $op
 
           case 'view-url':
             $url = $search->toUrl('canonical', $url_options);
+            $replacements[$original] = $url->toString();
+            break;
+
+          case 'activate-url':
+            $url = $search->toUrl('activate', $url_options);
             $replacements[$original] = $url->toString();
             break;
 

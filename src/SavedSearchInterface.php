@@ -39,4 +39,16 @@ interface SavedSearchInterface extends ContentEntityInterface, EntityOwnerInterf
    */
   public function getOptions();
 
+  /**
+   * Generates an access token specific to this saved search.
+   *
+   * This can be used for access checks independent of a user account (for
+   * instance, for accessing a saved search via mail – especially for anonymous
+   * users).
+   *
+   * @return string
+   *   The access token for this search.
+   */
+  public function getAccessToken();
+
 }

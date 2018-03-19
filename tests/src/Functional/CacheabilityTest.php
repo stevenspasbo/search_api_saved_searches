@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\search_api_saved_searches\Functional;
 
+use Drupal\search_api_saved_searches\Entity\SavedSearchAccessControlHandler;
 use Drupal\Tests\BrowserTestBase;
 
 /**
@@ -32,7 +33,7 @@ class CacheabilityTest extends BrowserTestBase {
     parent::setUp();
 
     $permissions = [
-      'administer search_api_saved_searches',
+      SavedSearchAccessControlHandler::ADMIN_PERMISSION,
     ];
     $this->adminUser = $this->drupalCreateUser($permissions);
     $this->drupalLogin($this->adminUser);

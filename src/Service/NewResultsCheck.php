@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\search_api_saved_searches;
+namespace Drupal\search_api_saved_searches\Service;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -10,6 +10,8 @@ use Drupal\search_api\LoggerTrait;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\SearchApiException;
 use Drupal\search_api\Utility\Utility;
+use Drupal\search_api_saved_searches\SavedSearchesException;
+use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Psr\Log\LoggerInterface;
 
 /**

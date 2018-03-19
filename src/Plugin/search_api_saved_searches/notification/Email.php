@@ -34,6 +34,11 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
   use PluginFormTrait;
 
   /**
+   * Drupal mail key for the "Activate saved search" mail.
+   */
+  const MAIL_ACTIVATE = 'activate';
+
+  /**
    * Drupal mail key for the "New results" mail.
    */
   const MAIL_NEW_RESULTS = 'new_results';
@@ -194,9 +199,10 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
     ];
     $args = ['@site_name' => '[site:name]'];
     $default_title = $this->configuration['activate']['title'] ?: $this->t('Activate your saved search at @site_name', $args);
-    $args['@activation_link'] = '[activation_link]';
+    $args['@user_name'] = '[user:display-name]';
+    $args['@activation_link'] = '[search-api-saved-search:activate-url]';
     $default_body = $this->configuration['activate']['body']
-      ?: $this->t("[user:display-name],
+      ?: $this->t("@user_name,
 
 A saved search on @site_name with this e-mail address was created.
 To activate this saved search, click the following link:
@@ -237,10 +243,11 @@ If you didn't create this saved search, just ignore this mail and the saved sear
     ];
     $args = ['@site_name' => '[site:name]'];
     $default_title = $this->configuration['notification']['title'] ?: $this->t('New results for your saved search at @site_name', $args);
+    $args['@user_name'] = '[user:display-name]';
     $args['@search_label'] = '[search-api-saved-search:label]';
     $args['@results_links'] = '[search-api-saved-search-results:links]';
     $default_body = $this->configuration['notification']['body']
-      ?: $this->t('[user:display-name],
+      ?: $this->t('@user_name,
 
 There are new results for your saved search "@search_label":
       
@@ -482,8 +489,22 @@ There are new results for your saved search "@search_label":
    * @see search_api_saved_searches_mail()
    */
   public function getActivationMail(&$message, $params) {
-    // @todo
-    // Remember "[activation_link]" pseudo-token replacement.
+    /** @var \Drupal\search_api_saved_searches\SavedSearchInterface $search */
+    $search = $params['search'];
+    $account = $search->getOwner();
+    $data = [
+      'search_api_saved_search' => $search,
+      'user' => $account,
+    ];
+    $options['langcode'] = $account->getPreferredLangcode();
+
+    $subject = $this->configuration['activate']['title'];
+    $subject = $this->getTokenService()->replace($subject, $data, $options);
+    $body = $this->configuration['activate']['body'];
+    $body = $this->getTokenService()->replace($body, $data, $options);
+
+    $message['subject'] = $subject;
+    $message['body'][] = $body;
   }
 
 }

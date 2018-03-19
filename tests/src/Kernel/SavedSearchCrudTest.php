@@ -6,8 +6,10 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api_saved_searches\Entity\SavedSearch;
 use Drupal\search_api_saved_searches\Entity\SavedSearchType;
-use Drupal\search_api_saved_searches\NewResultsCheck;
+use Drupal\search_api_saved_searches\Service\NewResultsCheck;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
+use Drupal\Tests\user\Traits\UserCreationTrait;
+use Drupal\user\Entity\User;
 
 /**
  * Tests CRUD functionality for saved searches.
@@ -16,6 +18,8 @@ use Drupal\search_api_saved_searches\SavedSearchInterface;
  * @coversDefaultClass \Drupal\search_api_saved_searches\Entity\SavedSearch
  */
 class SavedSearchCrudTest extends KernelTestBase {
+
+  use UserCreationTrait;
 
   /**
    * {@inheritdoc}
@@ -31,7 +35,7 @@ class SavedSearchCrudTest extends KernelTestBase {
   /**
    * A mock "new results check" service.
    *
-   * @var \PHPUnit\Framework\MockObject\MockObject|\Drupal\search_api_saved_searches\NewResultsCheck
+   * @var \PHPUnit\Framework\MockObject\MockObject|\Drupal\search_api_saved_searches\Service\NewResultsCheck
    */
   protected $newResultsCheck;
 
@@ -52,7 +56,7 @@ class SavedSearchCrudTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('search_api_saved_search');
     $this->installEntitySchema('search_api_task');
-    $this->installSchema('system', 'key_value_expire');
+    $this->installSchema('system', ['key_value_expire', 'sequences']);
     $this->installSchema('search_api_saved_searches', 'search_api_saved_searches_old_results');
 
     $this->newResultsCheck = $this->createMock(NewResultsCheck::class);
@@ -370,6 +374,40 @@ class SavedSearchCrudTest extends KernelTestBase {
     // Verify that the search was deleted.
     $search = SavedSearch::load($search->id());
     $this->assertNull($search);
+  }
+
+  /**
+   * Tests whether the correct owner is set by default for a new saved search.
+   */
+  public function testDefaultOwner() {
+    // Create the anonymous user. For that, we need the default roles.
+    $anonymous = User::create([
+      'uid' => 0,
+      'name' => '',
+    ]);
+    $anonymous->save();
+
+    // Create a saved search as anonymous.
+    $values = [
+      'type' => 'default',
+    ];
+    $search = SavedSearch::create($values);
+    $owner = $search->getOwner();
+    $this->assertNotNull($owner);
+    $this->assertEquals(0, $owner->id());
+    $this->assertEquals(0, $search->getOwnerId());
+
+    // Log in new user.
+    $user = $this->createUser();
+    $uid = $user->id();
+    $this->setCurrentUser($user);
+
+    // Create a saved search as a registered user.
+    $search = SavedSearch::create($values);
+    $owner = $search->getOwner();
+    $this->assertNotNull($owner);
+    $this->assertEquals($uid, $owner->id());
+    $this->assertEquals($uid, $search->getOwnerId());
   }
 
 }
