@@ -67,8 +67,7 @@ class SavedSearchCreateForm extends ContentEntityForm {
     if ($return === SAVED_NEW) {
       /** @var \Drupal\search_api_saved_searches\SavedSearchInterface $search */
       $search = $this->entity;
-      // @todo Add status field for saved searches.
-      $enabled = TRUE;
+      $enabled = $this->entity->get('status')->value;
       if ($enabled) {
         if ($search->get('notify_interval')->value < 0) {
           $this->messenger()->addStatus($this->t('Your saved search was successfully created.'));
@@ -78,6 +77,7 @@ class SavedSearchCreateForm extends ContentEntityForm {
         }
       }
       else {
+        // @todo Move the second part of this message to the "E-mail" plugin.
         $this->messenger()->addStatus($this->t('Your saved search was successfully created. You will soon receive an e-mail with a confirmation link to activate it.'));
       }
     }

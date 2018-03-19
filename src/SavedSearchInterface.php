@@ -3,6 +3,7 @@
 namespace Drupal\search_api_saved_searches;
 
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\search_api\Query\QueryInterface;
 use Drupal\user\EntityOwnerInterface;
 
 /**
@@ -31,6 +32,16 @@ interface SavedSearchInterface extends ContentEntityInterface, EntityOwnerInterf
   public function getQuery();
 
   /**
+   * Sets the search query.
+   *
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The new query.
+   *
+   * @return $this
+   */
+  public function setQuery(QueryInterface $query);
+
+  /**
    * Retrieves the options set for this saved search.
    *
    * @return array|null
@@ -46,9 +57,13 @@ interface SavedSearchInterface extends ContentEntityInterface, EntityOwnerInterf
    * instance, for accessing a saved search via mail – especially for anonymous
    * users).
    *
+   * @param string $operation
+   *   The operation to perform on the saved search entity. The returned token
+   *   will be only valid for this operation.
+   *
    * @return string
-   *   The access token for this search.
+   *   The access token for executing the given operation on this search.
    */
-  public function getAccessToken();
+  public function getAccessToken($operation);
 
 }

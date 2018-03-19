@@ -2,12 +2,10 @@
 
 namespace Drupal\search_api_saved_searches\Controller;
 
-use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\search_api_saved_searches\SavedSearchInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -41,8 +39,6 @@ class SavedSearchController extends ControllerBase {
    *
    * @param \Drupal\search_api_saved_searches\SavedSearchInterface $search_api_saved_search
    *   The saved search to activate.
-   * @param string $token
-   *   The access token.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   A redirect to either the search page or the site's front page.
@@ -50,16 +46,10 @@ class SavedSearchController extends ControllerBase {
    * @throws \Drupal\Core\Entity\EntityStorageException
    *   Thrown if saving the saved search failed.
    */
-  public function activateSearch(SavedSearchInterface $search_api_saved_search, $token) {
+  public function activateSearch(SavedSearchInterface $search_api_saved_search) {
     // Not possible for saved searches that are already active.
     if ($search_api_saved_search->get('status')->value) {
       throw new NotFoundHttpException();
-    }
-
-    // Verify that the access token matches.
-    $correct_token = $search_api_saved_search->getAccessToken();
-    if (!Crypt::hashEquals($correct_token, $token)) {
-      throw new AccessDeniedHttpException();
     }
 
     $search_api_saved_search->set('status', TRUE)->save();

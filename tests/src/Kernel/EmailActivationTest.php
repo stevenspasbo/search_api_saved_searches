@@ -151,7 +151,7 @@ END;
       ->toString();
     $this->assertNotEmpty(preg_match('#/saved-search/(\d+)/activate/([^/]+)$#', $activation_url, $match));
     $this->assertEquals($search->id(), $match[1]);
-    $this->assertEquals(urlencode($search->getAccessToken()), $match[2]);
+    $this->assertEquals(urlencode($search->getAccessToken('activate')), $match[2]);
 
     $captured_emails = \Drupal::state()->get('system.test_mail_collector');
     if (!$mail_expected) {
@@ -278,7 +278,7 @@ END;
 
     // Activate the saved search.
     $controller = new SavedSearchController();
-    $response = $controller->activateSearch($search, $search->getAccessToken());
+    $response = $controller->activateSearch($search, $search->getAccessToken('activate'));
     $this->assertInstanceOf(RedirectResponse::class, $response);
     $this->assertTrue($search->get('status')->value);
 

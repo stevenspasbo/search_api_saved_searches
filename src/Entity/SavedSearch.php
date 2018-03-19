@@ -55,9 +55,9 @@ use Drupal\user\UserInterface;
  *   permission_granularity = "bundle",
  *   links = {
  *     "canonical" = "/saved-search/{search_api_saved_search}",
- *     "activate" = "/saved-search/{search_api_saved_search}/activate/{token}",
- *     "edit-form" = "/user/{user}/saved-searches/{search_api_saved_search}/edit",
- *     "delete-form" = "/user/{user}/saved-searches/{search_api_saved_search}/delete",
+ *     "activate" = "/saved-search/{search_api_saved_search}/activate",
+ *     "edit-form" = "/saved-search/{search_api_saved_search}/edit",
+ *     "delete-form" = "/saved-search/{search_api_saved_search}/delete",
  *   },
  * )
  */
@@ -395,11 +395,18 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   protected function urlRouteParameters($rel) {
     $params = parent::urlRouteParameters($rel);
 
-    if ($rel === 'activate') {
-      $params['token'] = $this->getAccessToken();
-    }
-    elseif ($rel !== 'canonical') {
-      $params['user'] = $this->getOwnerId();
+    // Since Drupal is still not able to reproduce field values in their correct
+    // data types, we cast to string to get a correct check even for ""/NULL.
+    if ($rel === 'activate' || (string) $this->getOwnerId() === '0') {
+      $operations = [
+        'canonical' => 'view',
+        'activate' => 'activate',
+        'edit-form' => 'edit',
+        'delete-form' => 'delete',
+      ];
+      if (isset($operations[$rel])) {
+        $params['token'] = $this->getAccessToken($operations[$rel]);
+      }
     }
 
     return $params;
@@ -470,6 +477,15 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   /**
    * {@inheritdoc}
    */
+  public function setQuery(QueryInterface $query) {
+    $this->cachedProperties['query'] = $query;
+    $this->set('query', serialize($query));
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getOptions() {
     if (!isset($this->cachedProperties['options'])) {
       $this->cachedProperties['options'] = FALSE;
@@ -485,8 +501,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   /**
    * {@inheritdoc}
    */
-  public function getAccessToken() {
-    $key = $this->getEntityTypeId() . ':' . $this->id();
+  public function getAccessToken($operation) {
+    $key = $this->getEntityTypeId() . ':' . $this->id() . ':' . $operation;
     return Crypt::hmacBase64($key, Settings::getHashSalt());
   }
 

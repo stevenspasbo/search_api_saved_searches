@@ -34,7 +34,7 @@ class SavedSearchDeleteConfirmForm extends ContentEntityConfirmFormBase {
       return Url::fromUserInput($redirect);
     }
     else {
-      return Url::fromUri('internal:<front>');
+      return Url::fromUri('internal:/');
     }
   }
 

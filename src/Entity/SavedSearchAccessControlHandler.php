@@ -12,8 +12,8 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\search_api_saved_searches\BundleFieldDefinition;
-use Drupal\user\EntityOwnerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Provides access checking for saved searches.
@@ -39,6 +39,7 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
     $handler = new static($entity_type);
 
     $handler->setEntityTypeManager($container->get('entity_type.manager'));
+    $handler->setRequestStack($container->get('request_stack'));
 
     return $handler;
   }
@@ -67,16 +68,56 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
   }
 
   /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack|null
+   */
+  protected $requestStack;
+
+  /**
+   * Retrieves the request stack.
+   *
+   * @return \Symfony\Component\HttpFoundation\RequestStack
+   *   The request stack.
+   */
+  public function getRequestStack() {
+    return $this->requestStack ?: \Drupal::service('request_stack');
+  }
+
+  /**
+   * Sets the request stack.
+   *
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The new request stack.
+   *
+   * @return $this
+   */
+  public function setRequestStack(RequestStack $request_stack) {
+    $this->requestStack = $request_stack;
+    return $this;
+  }
+
+  /**
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
+    /** @var \Drupal\search_api_saved_searches\SavedSearchInterface $entity */
     $access = parent::checkAccess($entity, $operation, $account);
-    if (!$access->isAllowed()
-        && $entity instanceof EntityOwnerInterface) {
-      $is_owner = $account->id() == $entity->getOwnerId();
-      $owner_access = AccessResult::allowedIf($is_owner)
-        ->addCacheableDependency($account)
-        ->andIf($this->checkBundleAccess($account, $entity->bundle()));
+
+    if (!$access->isAllowed()) {
+      if (!$entity->getOwner()->isAnonymous()) {
+        $is_owner = $account->id() == $entity->getOwnerId();
+        $owner_access = AccessResult::allowedIf($is_owner)
+          ->addCacheableDependency($account);
+      }
+      else {
+        $token = $this->getRequestStack()->getCurrentRequest()->query
+          ->get('token');
+        $token_match = $token === $entity->getAccessToken($operation);
+        $owner_access = AccessResult::allowedIf($token_match)
+          ->addCacheContexts(['url.query_args:token']);
+      }
+      $owner_access->andIf($this->checkBundleAccess($account, $entity->bundle()));
       $access = $access->orIf($owner_access);
     }
 
@@ -109,7 +150,6 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
       'created',
       'last_executed',
       'next_execution',
-      'notify_interval',
     ];
     if ($operation === 'edit' && in_array($field_name, $administrative_fields, TRUE)) {
       return AccessResult::allowedIfHasPermission($account, self::ADMIN_PERMISSION);

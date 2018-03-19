@@ -252,12 +252,7 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     }
 
     // Remember the page on which the search was created.
-    $path = \Drupal::request()->getRequestUri();
-    $base_path = rtrim(base_path(), '/');
-    $base_path_length = strlen($base_path);
-    if ($base_path && substr($path, 0, $base_path_length) === $base_path) {
-      $path = substr($path, $base_path_length);
-    }
+    $path = $this->getCurrentPath();
     $options = [
       'page' => $path,
     ];
@@ -309,6 +304,31 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
       ->getStorage('search_api_saved_search_type')
       ->load($this->configuration['type']);
     return $type;
+  }
+
+  /**
+   * Retrieves a sanitized version of the current path.
+   *
+   * @return string
+   *   The current path, relative to the Drupal installation.
+   */
+  protected function getCurrentPath() {
+    // Get the current path.
+    $path = $this->getRequestStack()->getCurrentRequest()->getRequestUri();
+
+    // Remove the Drupal base path, if any.
+    $base_path = rtrim(base_path(), '/');
+    $base_path_length = strlen($base_path);
+    if ($base_path && substr($path, 0, $base_path_length) === $base_path) {
+      $path = substr($path, $base_path_length);
+    }
+
+    // Remove AJAX parameters.
+    $path = preg_replace('/([?&])(ajax_form|_wrapper_format)=[^&#]+/', '$1', $path);
+    // Sanitize empty GET parameter arrays.
+    $path = preg_replace('/\?(#|$)/', '$1', $path);
+
+    return $path;
   }
 
 }

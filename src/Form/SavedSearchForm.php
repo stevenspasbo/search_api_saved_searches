@@ -50,7 +50,7 @@ class SavedSearchForm extends ContentEntityForm {
       }
       $query = $search->getQuery();
       $query->keys($keywords);
-      $search->set('query', $query);
+      $search->setQuery($query);
     }
 
     return $search;
