@@ -250,7 +250,7 @@ If you didn't create this saved search, just ignore this mail and the saved sear
       ?: $this->t('@user_name,
 
 There are new results for your saved search "@search_label":
-      
+
 @results_links
 
 --  @site_name team', $args);
