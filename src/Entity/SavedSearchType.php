@@ -46,6 +46,7 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *   config_export = {
  *     "id",
  *     "label",
+ *     "description",
  *     "notification_settings",
  *     "options",
  *   },
@@ -73,6 +74,13 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
    * @var string
    */
   protected $label;
+
+  /**
+   * The type's (admin) description.
+   *
+   * @var string
+   */
+  protected $description;
 
   /**
    * The settings of the notification plugins selected for this index.
@@ -297,6 +305,13 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
       $new = static::create(['id' => $type->id()]);
       static::adaptFieldStorageDefinitions($type, $new);
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDescription() {
+    return $this->description;
   }
 
   /**

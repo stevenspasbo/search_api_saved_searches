@@ -105,6 +105,7 @@ class IntegrationTest extends BrowserTestBase {
 
     $assert_session->pageTextContains('Saved searches');
     $assert_session->pageTextContains('Default');
+    $assert_session->pageTextContains('A default type created automatically at module installation.');
 
     $this->clickLink('Edit');
 
@@ -156,6 +157,7 @@ END;
     $edit = [
       'label' => 'Foo &amp; Bar',
       'id' => 'foobar',
+      'description' => 'Some description text for type <em>Foo &amp;&amp; Bar</em>.',
       'status' => TRUE,
       'options[displays][default]' => TRUE,
       'options[displays][selected][views_page:search_api_test_view__page_1]' => TRUE,
@@ -198,6 +200,7 @@ END;
 
     $this->drupalGet('admin/config/search/search-api-saved-searches');
     $this->assertOnlyEscaped('Foo &amp; Bar');
+    $assert_session->responseContains('Some description text for type <em>Foo &amp;&amp; Bar</em>.');
   }
 
   /**

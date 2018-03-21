@@ -169,9 +169,15 @@ class SavedSearchTypeForm extends EntityForm {
       '#required' => TRUE,
       '#machine_name' => [
         'exists' => '\Drupal\search_api_saved_searches\Entity\SavedSearchType::load',
-        'source' => ['name'],
+        'source' => ['label'],
       ],
       '#disabled' => !$type->isNew(),
+    ];
+    $form['description'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Description'),
+      '#description' => $this->t('An optional description for this type. This will only be shown to administrators.'),
+      '#default_value' => $type->getDescription(),
     ];
     $form['status'] = [
       '#type' => 'checkbox',

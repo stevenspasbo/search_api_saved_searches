@@ -2,6 +2,7 @@ id: 'default'
 status: true
 langcode: en
 label: 'Default'
+description: 'A default type created automatically at module installation.'
 notification_settings:
   email:
     registered_choose_mail: false

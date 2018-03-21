@@ -8,8 +8,11 @@ search_api_saved_searches.type.*:
       type: string
       label: 'ID'
     label:
-      type: string
+      type: label
       label: 'Label'
+    description:
+      type: text
+      label: 'Description'
     notification_settings:
       type: sequence
       label: 'Notification plugin settings'
@@ -43,7 +46,7 @@ search_api_saved_searches.type.*:
             type: string
             label: 'The date field to use for this index (or empty to determine via result IDs)'
         description:
-          type: string
+          type: text
           label: 'User interface description'
         allow_keys_change:
           type: boolean

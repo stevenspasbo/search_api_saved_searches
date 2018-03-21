@@ -12,6 +12,14 @@ use Drupal\search_api_saved_searches\Notification\NotificationPluginInterface;
 interface SavedSearchTypeInterface extends ConfigEntityInterface {
 
   /**
+   * Retrieves the type's description.
+   *
+   * @return string
+   *   The (admin) description of this saved search type.
+   */
+  public function getDescription();
+
+  /**
    * Retrieves this saved search type's notification plugins.
    *
    * @return \Drupal\search_api_saved_searches\Notification\NotificationPluginInterface[]

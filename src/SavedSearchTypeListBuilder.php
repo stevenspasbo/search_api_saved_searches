@@ -16,6 +16,7 @@ class SavedSearchTypeListBuilder extends ConfigEntityListBuilder {
   public function buildHeader() {
     return [
       'label' => $this->t('Name'),
+      'description' => $this->t('Description'),
       'status' => $this->t('Status'),
     ] + parent::buildHeader();
   }
@@ -24,7 +25,7 @@ class SavedSearchTypeListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface $entity */
+    /** @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface $entity */
     $status = $entity->status();
     $status_label = $status ? $this->t('Enabled') : $this->t('Disabled');
     $status_icon = [
@@ -39,6 +40,11 @@ class SavedSearchTypeListBuilder extends ConfigEntityListBuilder {
     $row = [
       'data' => [
         'label' => $entity->label(),
+        'description' => [
+          'data' => [
+            '#markup' => $entity->getDescription(),
+          ],
+        ],
         'status' => [
           'data' => $status_icon,
         ],
