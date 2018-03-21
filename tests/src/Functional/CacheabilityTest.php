@@ -7,6 +7,8 @@ use Drupal\Tests\BrowserTestBase;
 
 /**
  * Tests that this module provides correct cache metadata.
+ *
+ * @group search_api_saved_searches
  */
 class CacheabilityTest extends BrowserTestBase {
 

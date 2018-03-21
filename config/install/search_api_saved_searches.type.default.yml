@@ -4,7 +4,7 @@ langcode: en
 label: 'Default'
 notification_settings:
   email:
-    registered_choose_mail: true
+    registered_choose_mail: false
     activate:
       send: true
       title: 'Activate your saved search at [site:name]'
