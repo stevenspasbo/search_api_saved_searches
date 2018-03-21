@@ -27,16 +27,12 @@ use Drupal\search_api_saved_searches\SavedSearchTypeInterface;
  *     plural = "@count saved search types",
  *   ),
  *   handlers = {
- *     "storage" =
- *   "Drupal\search_api_saved_searches\Entity\SavedSearchTypeStorage",
- *     "list_builder" =
- *   "Drupal\search_api_saved_searches\SavedSearchTypeListBuilder",
+ *     "storage" = "Drupal\search_api_saved_searches\Entity\SavedSearchTypeStorage",
+ *     "list_builder" = "Drupal\search_api_saved_searches\SavedSearchTypeListBuilder",
  *     "form" = {
- *       "default" =
- *   "Drupal\search_api_saved_searches\Form\SavedSearchTypeForm",
+ *       "default" = "Drupal\search_api_saved_searches\Form\SavedSearchTypeForm",
  *       "edit" = "Drupal\search_api_saved_searches\Form\SavedSearchTypeForm",
- *       "delete" =
- *   "Drupal\search_api_saved_searches\Form\SavedSearchTypeDeleteConfirmForm",
+ *       "delete" = "Drupal\search_api_saved_searches\Form\SavedSearchTypeDeleteConfirmForm",
  *     },
  *   },
  *   admin_permission = "administer search_api_saved_searches",
@@ -280,6 +276,21 @@ class SavedSearchType extends ConfigEntityBundleBase implements SavedSearchTypeI
    */
   public static function postDelete(EntityStorageInterface $storage, array $entities) {
     parent::postDelete($storage, $entities);
+
+    // Remove any searches for the deleted types. Normally, deleting a type with
+    // existing searches should not be possible – but it's only forbidden via
+    // the UI, not via an access handler, so w can't rely on that.
+    // NB: $entities is not documented to be keyed by entity ID, but since Core
+    // relies on it (see \Drupal\comment\Entity\Comment::postDelete()), we
+    // should be able to do the same.
+    $storage = \Drupal::entityTypeManager()
+      ->getStorage('search_api_saved_search');
+    $search_ids = $storage->getQuery()
+      ->condition('type', array_keys($entities), 'IN')
+      ->execute();
+    if ($search_ids) {
+      $storage->delete($storage->loadMultiple($search_ids));
+    }
 
     /** @var \Drupal\search_api_saved_searches\SavedSearchTypeInterface $type */
     foreach ($entities as $type) {

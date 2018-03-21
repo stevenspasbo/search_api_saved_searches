@@ -33,6 +33,13 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
   protected $entityTypeManager;
 
   /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack|null
+   */
+  protected $requestStack;
+
+  /**
    * {@inheritdoc}
    */
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
@@ -66,13 +73,6 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
     $this->entityTypeManager = $entity_type_manager;
     return $this;
   }
-
-  /**
-   * The request stack.
-   *
-   * @var \Symfony\Component\HttpFoundation\RequestStack|null
-   */
-  protected $requestStack;
 
   /**
    * Retrieves the request stack.

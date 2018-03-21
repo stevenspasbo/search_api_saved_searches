@@ -16,7 +16,9 @@ class SavedSearchCreateForm extends ContentEntityForm {
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
-    $form['#prefix'] = '<div id="search-api-saved-searches-save-form-wrapper">';
+    $bundle = $this->entity->bundle();
+    $id = "search-api-saved-searches-save-$bundle-form-wrapper";
+    $form['#prefix'] = "<div id=\"$id\">";
     $form['#suffix'] = '</div>';
 
     return $form;
@@ -32,9 +34,11 @@ class SavedSearchCreateForm extends ContentEntityForm {
     $actions['submit']['#value'] = $this->t('Save search');
 
     // Add AJAX handling.
+    $bundle = $this->entity->bundle();
+    $id = "search-api-saved-searches-save-$bundle-form-wrapper";
     $actions['submit']['#ajax'] = [
       'callback' => '::saveFormAjax',
-      'wrapper' => 'search-api-saved-searches-save-form-wrapper',
+      'wrapper' => $id,
       'method' => 'replace',
       'effect' => 'fade',
     ];

@@ -462,6 +462,23 @@ class SavedSearchTypeForm extends EntityForm {
       }
     }
     $type->setNotificationPlugins($plugins);
+
+    if ($this->entity->isNew()) {
+      $form_state->setRedirect('entity.search_api_saved_search_type.edit_form', [
+        'search_api_saved_search_type' => $type->id(),
+      ]);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function save(array $form, FormStateInterface $form_state) {
+    $return = parent::save($form, $form_state);
+
+    $this->messenger()->addStatus($this->t('Your settings have been saved.'));
+
+    return $return;
   }
 
 }
