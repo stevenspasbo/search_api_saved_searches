@@ -149,7 +149,7 @@ END;
 
     $activation_url = $search->toUrl('activate', ['absolute' => TRUE])
       ->toString();
-    $this->assertNotEmpty(preg_match('#/saved-search/(\d+)/activate/([^/]+)$#', $activation_url, $match));
+    $this->assertNotEmpty(preg_match('#/saved-search/(\d+)/activate\?token=([^&]+)$#', $activation_url, $match));
     $this->assertEquals($search->id(), $match[1]);
     $this->assertEquals(urlencode($search->getAccessToken('activate')), $match[2]);
 

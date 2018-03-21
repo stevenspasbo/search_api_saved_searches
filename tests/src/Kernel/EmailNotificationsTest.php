@@ -138,7 +138,7 @@ Your saved search "[search-api-saved-search:label]" has [search-api-saved-search
     $result_labels = [
       'Busking',
       'My Darling',
-      'The Unfortunate End of Miguel the Matador',
+      'Miguel the Matador',
     ];
     foreach ($result_labels as $i => $label) {
       $entity = $this->addTestEntity($i + 1, [
