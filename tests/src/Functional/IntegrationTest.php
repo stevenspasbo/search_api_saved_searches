@@ -467,13 +467,15 @@ END;
     $this->assertOnlyEscaped('Foo &amp; Bar');
 
     // Delete all saved searches of type "foobar".
-    // @todo This should be done (and, thus, possible) via the UI.
-    $storage = \Drupal::entityTypeManager()
-      ->getStorage('search_api_saved_search');
-    $search_ids = $storage->getQuery()
-      ->condition('type', 'foobar')
-      ->execute();
-    $storage->delete($storage->loadMultiple($search_ids));
+    $this->drupalGet('admin/content/saved-searches');
+    $edit = ['type[]' => 'foobar'];
+    for ($i = 0; $i < $count_foobar_searches; ++$i) {
+      $this->submitForm($edit, 'Apply');
+      $this->clickLink('Delete');
+      $this->submitForm([], 'Delete');
+      $assert_session->pageTextContains('The saved search was successfully deleted.');
+      $assert_session->addressEquals($this->buildUrl('admin/content/saved-searches'));
+    }
 
     $this->drupalGet('admin/config/search/search-api-saved-searches/type/foobar/delete');
     $assert_session->pageTextContains('Do you really want to delete this saved search type?');
