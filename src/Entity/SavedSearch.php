@@ -272,9 +272,13 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
         // but probably just unsetting this option in the query we save will
         // work well enough in almost all cases.
         if ($key === 'query' && $values[$key] instanceof QueryInterface) {
+          // Remember the executed query so we can avoid re-executing it in this
+          // page request to get the known results.
+          $values['cachedProperties']['executed query'] = $values[$key];
+
           // Clone the query to not mess with the original.
           /** @var \Drupal\search_api\Query\QueryInterface $query */
-          $query = clone $values[$key];
+          $query = $values[$key]->getOriginalQuery();
           $options = &$query->getOptions();
           unset($options['search_api_view']);
           $values[$key] = $query;
@@ -365,10 +369,18 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       $date_field = $type->getOption("date_field.$index_id");
       if (!$date_field) {
         // Prime the "search_api_saved_searches_old_results" table with entries
-        // for all current results.
+        // for all current results. If we already have the executed version of
+        // the query, we use that for the "new results" check so we don't need
+        // to execute the query again.
+        if (!empty($this->cachedProperties['executed query'])) {
+          $this->cachedProperties['query'] = $this->cachedProperties['executed query'];
+        }
         \Drupal::getContainer()
           ->get('search_api_saved_searches.new_results_check')
           ->getNewResults($this);
+        // Restore the cached query, in case we modified it. (Otherwise this is
+        // a no-op.)
+        $this->cachedProperties['query'] = $query;
       }
     }
   }

@@ -20,7 +20,7 @@
   },
   "license": "GPL-2.0+",
   "require": {
-    "drupal/search_api": "1.x"
+    "drupal/search_api": "^1.8"
   },
   "require-dev": {
     "drupal/search_api_page": "@dev"

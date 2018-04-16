@@ -219,6 +219,9 @@ class NewResultsCheck {
     if (!$query) {
       throw new SavedSearchesException("Saved search #$search_id does not have a valid query set");
     }
+    // Clone the query to make sure we don't make any modifications to its
+    // stored version.
+    $query = clone $query;
     $index_id = $query->getIndex()->id();
     $date_field = $type->getOption("date_field.$index_id");
     if ($date_field) {
@@ -228,7 +231,6 @@ class NewResultsCheck {
     // Unify some general query options.
     $query->setProcessingLevel(QueryInterface::PROCESSING_BASIC);
     $query->setSearchId("search_api_saved_searches:$search_id");
-    $query->setOption('search_api_facets', []);
     $query->range(NULL, NULL);
 
     try {
