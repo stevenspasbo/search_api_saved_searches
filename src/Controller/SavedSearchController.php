@@ -26,11 +26,11 @@ class SavedSearchController extends ControllerBase {
    *   Thrown if the search didn't specify a search page path.
    */
   public function viewSearch(SavedSearchInterface $search_api_saved_search) {
-    $options = $search_api_saved_search->getOptions();
-    if (empty($options['page'])) {
+    $path = $search_api_saved_search->getPath();
+    if (!$path) {
       throw new NotFoundHttpException();
     }
-    $url = Url::fromUserInput($options['page'], ['absolute' => TRUE]);
+    $url = Url::fromUserInput($path, ['absolute' => TRUE]);
     return new RedirectResponse($url->toString(), 302);
   }
 
@@ -55,12 +55,12 @@ class SavedSearchController extends ControllerBase {
     $search_api_saved_search->set('status', TRUE)->save();
     $this->messenger()->addStatus($this->t('Your saved search was successfully activated.'));
 
-    $options = $search_api_saved_search->getOptions();
-    if (empty($options['page'])) {
+    $path = $search_api_saved_search->getPath();
+    if (!$path) {
       $url = Url::fromUri('internal:/', ['absolute' => TRUE]);
     }
     else {
-      $url = Url::fromUserInput($options['page'], ['absolute' => TRUE]);
+      $url = Url::fromUserInput($path, ['absolute' => TRUE]);
     }
     return new RedirectResponse($url->toString(), 302);
   }

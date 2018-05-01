@@ -156,7 +156,7 @@ class SavedSearchAccessControlHandler extends EntityAccessControlHandler impleme
     }
 
     // For serialized fields, neither viewing nor editing makes sense.
-    $serialized_fields = ['query', 'options'];
+    $serialized_fields = ['query'];
     if (in_array($field_name, $serialized_fields, TRUE)) {
       return AccessResult::forbidden();
     }

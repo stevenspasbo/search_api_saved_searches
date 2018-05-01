@@ -251,17 +251,12 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
       $build['description']['#markup'] = Xss::filterAdmin($description);
     }
 
-    // Remember the page on which the search was created.
-    $path = $this->getCurrentPath();
-    $options = [
-      'page' => $path,
-    ];
-
     $values = [
       'type' => $type->id(),
       'index_id' => $query->getIndex()->id(),
       'query' => $query,
-      'options' => $options,
+      // Remember the page on which the search was created.
+      'path' => $this->getCurrentPath(),
     ];
     $saved_search = $this->getEntityTypeManager()
       ->getStorage('search_api_saved_search')

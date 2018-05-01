@@ -211,16 +211,17 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
         'region' => 'hidden',
       ]);
 
-    $fields['options'] = BaseFieldDefinition::create('string_long')
-      ->setLabel(t('Options'))
-      ->setDescription(t('Further options for this saved search.'))
+    $fields['path'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Path'))
+      ->setDescription(t("The path to this saved search's query."))
       ->setSetting('case_sensitive', TRUE)
       ->setDisplayOptions('view', [
         'region' => 'hidden',
       ])
       ->setDisplayOptions('form', [
         'region' => 'hidden',
-      ]);
+      ])
+      ->setDisplayConfigurable('form', TRUE);
 
     return $fields;
   }
@@ -258,37 +259,36 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     parent::preCreate($storage, $values);
 
-    // Auto-serialize query and options, if necessary.
-    foreach (['query', 'options'] as $key) {
-      if (isset($values[$key]) && !is_scalar($values[$key])) {
-        // Search queries created via Views will have a
-        // \Drupal\views\ViewExecutable object in the "search_api_view" option
-        // as possibly useful metadata for alter hooks, etc. The big problem
-        // with that is that those objects will automatically re-execute the
-        // view when they are unserialized, which is a huge, completely
-        // unnecessary overhead in our case (which might furthermore confuse
-        // modules reacting to searches, like Facets – or this one). It's hard
-        // to tell what a "proper" solution for this problem would look like,
-        // but probably just unsetting this option in the query we save will
-        // work well enough in almost all cases.
-        if ($key === 'query' && $values[$key] instanceof QueryInterface) {
-          // Remember the executed query so we can avoid re-executing it in this
-          // page request to get the known results.
-          $values['cachedProperties']['executed query'] = $values[$key];
+    // Auto-serialize query, if necessary.
+    if (isset($values['query']) && $values['query'] instanceof QueryInterface) {
+      /** @var \Drupal\search_api\Query\QueryInterface $query */
+      $query = $values['query'];
 
-          // Clone the query to not mess with the original.
-          /** @var \Drupal\search_api\Query\QueryInterface $query */
-          $query = $values[$key]->getOriginalQuery();
-          $options = &$query->getOptions();
-          unset($options['search_api_view']);
-          $values[$key] = $query;
-        }
+      // Remember the executed query so we can avoid re-executing it in this
+      // page request to get the known results.
+      $values['cachedProperties']['executed query'] = $query;
 
-        // Set to the cached property so we don't need to unserialize again in
-        // this page request.
-        $values['cachedProperties'][$key] = $values[$key];
-        $values[$key] = serialize($values[$key]);
-      }
+      // Get the original, unexecuted query and clone it to not mess with the
+      // original.
+      $query = clone $query->getOriginalQuery();
+
+      // Search queries created via Views will have a
+      // \Drupal\views\ViewExecutable object in the "search_api_view" option as
+      // possibly useful metadata for alter hooks, etc. The big problem with
+      // that is that those objects will automatically re-execute the view when
+      // they are unserialized, which is a huge, completely unnecessary overhead
+      // in our case (which might furthermore confuse modules reacting to
+      // searches, like Facets – or this one). It's hard to tell what a "proper"
+      // solution for this problem would look like, but probably just unsetting
+      // this option in the query we save will work well enough in almost all
+      // cases.
+      $options = &$query->getOptions();
+      unset($options['search_api_view']);
+
+      // Set to the cached property so we don't need to unserialize again in
+      // this page request.
+      $values['cachedProperties']['query'] = $query;
+      $values['query'] = serialize($query);
     }
   }
 
@@ -498,16 +498,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
   /**
    * {@inheritdoc}
    */
-  public function getOptions() {
-    if (!isset($this->cachedProperties['options'])) {
-      $this->cachedProperties['options'] = FALSE;
-      $options = $this->get('options')->value;
-      if ($options) {
-        $this->cachedProperties['options'] = unserialize($options);
-      }
-    }
-
-    return $this->cachedProperties['options'] ?: NULL;
+  public function getPath() {
+    return $this->get('path')->value;
   }
 
   /**

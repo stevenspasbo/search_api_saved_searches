@@ -42,13 +42,13 @@ interface SavedSearchInterface extends ContentEntityInterface, EntityOwnerInterf
   public function setQuery(QueryInterface $query);
 
   /**
-   * Retrieves the options set for this saved search.
+   * Retrieves the path to the saved search's original search page.
    *
-   * @return array|null
-   *   The options set for this saved search, or NULL if they couldn't be
-   *   retrieved.
+   * @return string|null
+   *   An internal path to the original search page for this saved search, or
+   *   NULL if there was none set.
    */
-  public function getOptions();
+  public function getPath();
 
   /**
    * Generates an access token specific to this saved search.
