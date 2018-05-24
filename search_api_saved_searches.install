@@ -32,11 +32,10 @@ function search_api_saved_searches_schema() {
       ],
     ],
     'indexes' => [
-      'type' => ['type'],
+      'search_type' => ['search_type'],
     ],
     'primary key' => ['search_id', 'item_id'],
   ];
 
   return $schema;
 }
-

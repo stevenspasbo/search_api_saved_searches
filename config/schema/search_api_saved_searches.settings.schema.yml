@@ -1,9 +1,14 @@
 # Schema for the Search API Saved Searches module settings
 
 search_api_saved_searches.settings:
-  type: mapping
+  type: config_object
   label: 'Search API Saved Searches settings'
   mapping:
     cron_batch_size:
       type: integer
       label: 'Maximum number of searches to check at once during cron (0 for "no limit")'
+    langcode:
+      type: string
+      label: 'Language code'
+    _core:
+      type: _core_config_info

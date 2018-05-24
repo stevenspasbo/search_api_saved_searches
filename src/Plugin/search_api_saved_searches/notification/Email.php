@@ -192,7 +192,9 @@ class Email extends NotificationPluginBase implements PluginFormInterface {
     $default_title = $this->configuration['activate']['title'] ?: $this->t('Activate your saved search at @site_name', $args);
     $args['@activation_link'] = '[activation_link]';
     $default_body = $this->configuration['activate']['body']
-      ?: $this->t("A saved search on @site_name with this e-mail address was created.
+      ?: $this->t("[user:display-name],
+
+A saved search on @site_name with this e-mail address was created.
 To activate this saved search, click the following link:
 
 @activation_link
@@ -220,7 +222,7 @@ If you didn't create this saved search, just ignore this mail and the saved sear
       '#states' => $states,
     ];
 
-    $types = ['site', 'user', 'search_api_saved_search'];
+    $types = ['site', 'user', 'search-api-saved-search'];
     $available_tokens = $this->getAvailableTokensList($types);
     $form['notification']['available_tokens'] = $available_tokens;
 
@@ -231,10 +233,12 @@ If you didn't create this saved search, just ignore this mail and the saved sear
     ];
     $args = ['@site_name' => '[site:name]'];
     $default_title = $this->configuration['notification']['title'] ?: $this->t('New results for your saved search at @site_name', $args);
-    $args['@search_label'] = '[search_api_saved_search:label]';
-    $args['@results_links'] = '[search_api_results:links]';
+    $args['@search_label'] = '[search-api-saved-search:label]';
+    $args['@results_links'] = '[search-api-saved-search-results:links]';
     $default_body = $this->configuration['notification']['body']
-      ?: $this->t('There are new results for your saved search "@search_label":
+      ?: $this->t('[user:display-name],
+
+There are new results for your saved search "@search_label":
       
 @results_links
 
@@ -309,7 +313,7 @@ If you didn't create this saved search, just ignore this mail and the saved sear
     $fields['mail'] = BundleFieldDefinition::create('email')
       ->setLabel(t('E-mail'))
       ->setDescription(t('The email address to which notifications should be sent.'))
-      ->setDefaultValueCallback('Drupal\search_api_saved_searches\Plugin\search_api_saved_searches\notification\Email::getDefaultMail')
+      ->setDefaultValueCallback(static::class . '::getDefaultMail')
       ->setDisplayOptions('view', [
         'type' => 'timestamp',
         'weight' => 0,
@@ -340,23 +344,13 @@ If you didn't create this saved search, just ignore this mail and the saved sear
   public function notify(SavedSearchInterface $search, ResultSetInterface $results) {
     $account = $search->getOwner();
 
-    // Method of determining site mail taken from _user_mail_notify().
-    $site_config = $this->getConfigFactory()->get('system.site');
-    $site_mail = $site_config->get('mail_notification');
-    if (empty($site_mail)) {
-      $site_mail = $site_config->get('mail');
-    }
-    if (empty($site_mail)) {
-      $site_mail = ini_get('sendmail_from');
-    }
-
     $params = [
       'search' => $search,
       'results' => $results,
       'plugin' => $this,
     ];
     $this->getMailService()
-      ->mail('search_api_saved_searches', self::MAIL_NEW_RESULTS, $account->getEmail(), $account->getPreferredLangcode(), $params, $site_mail);
+      ->mail('search_api_saved_searches', self::MAIL_NEW_RESULTS, $search->get('mail')->value, $account->getPreferredLangcode(), $params);
   }
 
   /**
@@ -412,7 +406,7 @@ If you didn't create this saved search, just ignore this mail and the saved sear
     $body = $this->getTokenService()->replace($body, $data, $options);
 
     $message['subject'] = $subject;
-    $message['body'] = $body;
+    $message['body'][] = $body;
   }
 
   public function getActivationMail(&$message, $params) {

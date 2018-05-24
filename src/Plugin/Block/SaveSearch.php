@@ -206,7 +206,6 @@ class SaveSearch extends BlockBase implements ContainerFactoryPluginInterface {
     $values = [
       'type' => $type->id(),
       'query' => serialize($query),
-      'mail' => \Drupal::currentUser()->getEmail(),
     ];
     $saved_search = $this->getEntityTypeManager()
       ->getStorage('search_api_saved_search')

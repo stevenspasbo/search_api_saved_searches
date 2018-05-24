@@ -7,3 +7,17 @@ block.settings.search_api_saved_searches:
     type:
       type: string
       label: 'Saved search type'
+
+block.settings.quick_save_and_list_searches:
+  type: block_settings
+  label: 'Quick Save and List Search block settings'
+  mapping:
+    type:
+      type: string
+      label: 'Saved search type'
+    form_mode:
+      type: string
+      label: 'Form mode'
+    view_mode:
+      type: string
+      label: 'View mode'

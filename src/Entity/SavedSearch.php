@@ -27,6 +27,7 @@ use Drupal\user\UserInterface;
  *   handlers = {
  *     "list_builder" = "Drupal\search_api_saved_searches\SavedSearchListBuilder",
  *     "views_data" = "Drupal\search_api_saved_searches\SavedSearchViewsData",
+ *     "access" = "Drupal\search_api_saved_searches\SavedSearchAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\search_api_saved_searches\Form\SavedSearchForm",
  *       "create" = "Drupal\search_api_saved_searches\Form\SavedSearchCreateForm",
@@ -96,7 +97,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
         'type' => 'string_textfield',
         'weight' => -5,
       ])
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['uid'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Created by'))
@@ -117,7 +119,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
           'placeholder' => '',
         ],
       ])
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
@@ -130,7 +133,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
         'type' => 'datetime_timestamp',
         'weight' => 10,
       ])
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['last_executed'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Last executed'))
@@ -143,7 +147,8 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
         'type' => 'datetime_timestamp',
         'weight' => 10,
       ])
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['next_execution'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Next execution'))
@@ -155,29 +160,30 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ->setDisplayOptions('form', [
         'type' => 'datetime_timestamp',
         'weight' => 10,
-      ]);
-
-    $fields['notify_interval'] = BaseFieldDefinition::create('integer')
-      ->setLabel(t('Notification interval'))
-      ->setDescription(t('The interval (in seconds) in which you want to receive notifications of new results for this saved search. Use -1 for "Never".'))
-      ->addPropertyConstraints('value', [
-        'Range' => [
-          'min' => -1,
-          'minMessage' => t('%name: The integer must be larger or equal to %min.', [
-            '%name' => t('Notification interval'),
-            '%min' => -1,
-          ]),
-        ],
       ])
+      ->setDisplayConfigurable('form', TRUE);
+
+    $fields['notify_interval'] = BaseFieldDefinition::create('list_integer')
+      ->setLabel(t('Notification interval'))
+      ->setDescription(t('The interval in which you want to receive notifications of new results for this saved search.'))
+      ->setRequired(TRUE)
+      ->setSetting('allowed_values', [
+        3600 => t('Hourly'),
+        86400 => t('Daily'),
+        604800 => t('Weekly'),
+        -1 => t('Never'),
+      ])
+      ->setDefaultValue(-1)
       ->setDisplayOptions('view', [
-        'type' => 'number_integer',
+        'type' => 'list_default',
         'weight' => 0,
       ])
       ->setDisplayOptions('form', [
-        'type' => 'number',
+        'type' => 'options_select',
         'weight' => 0,
       ])
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     // @todo Is there a better data type? Should we provide one?
     $fields['query'] = BaseFieldDefinition::create('string_long')
@@ -185,10 +191,10 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ->setDescription(t('The saved search query.'))
       ->setSetting('case_sensitive', TRUE)
       ->setDisplayOptions('view', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ])
       ->setDisplayOptions('form', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ]);
 
     $fields['options'] = BaseFieldDefinition::create('string_long')
@@ -196,10 +202,10 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
       ->setDescription(t('Further options for this saved search.'))
       ->setSetting('case_sensitive', TRUE)
       ->setDisplayOptions('view', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ])
       ->setDisplayOptions('form', [
-        'type' => 'hidden',
+        'region' => 'hidden',
       ]);
 
     return $fields;
@@ -215,9 +221,7 @@ class SavedSearch extends ContentEntityBase implements SavedSearchInterface {
     $type = \Drupal::entityTypeManager()
       ->getStorage('search_api_saved_search_type')
       ->load($bundle);
-    foreach ($type->getNotificationPlugins() as $plugin) {
-      $fields += $plugin->getFieldDefinitions();
-    }
+    $fields += $type->getNotificationPluginFieldDefinitions();
 
     return $fields;
   }
